@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Solicitud de empleo</title>
+	<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+
+		<table border="1" align="center" width="75%">
+		<tr>
+			<td><h2>Solicitud de Empleo</h2></td>
+			<td><label for="fecha">Fecha</label><input type="date"></td>
+			<td rowspan="3">Foto reciente <br> <input type="file"></td>
+		</tr>
+		<tr>
+			<td rowspan="2" align="center"><b>Favor de llenar esta solictud en forma manuscrita <br><br> Nota: La información aquí proporcionada será tratada <br> Confidencialmente</b></td>
+			<td><label for="puesto">Puesto que Solicita</label><input type="text" name="puesto"></td>
+		</tr>
+		<tr>
+			<td><label for="sueldo">Sueldo Mensual Deseado</label><input type="number" name="sueldo"></td>
+		</tr>
+	</table>
+	<br><br>
+
+		<fieldset>
+		<legend align="center"><b>Datos personales</b></legend>
+			<table align="center" border="1" width="100%">
+				<tr>
+					<td colspan="2"><label for="apellidopaterno">Apellido Paterno</label><br><input type="text" name="apellidopaterno"></td>
+					<td colspan="3"><label for="apellidomaterno">Apellido Materno</label><br><input type="text" name="apellidomaterno"></td>
+					<td colspan="3"><label for="nombres">Nombre(s)</label><br><input type="text" name="nombres"></td>
+					<td colspan="2"><label for="edad">Edad</label><br><input type="number" name="edad"> <label for="años">Años</label></td>
+				</tr>
+				<tr>
+					<td colspan="8"><label for="direccion">Dirección</label><input type="text" name="direccion">
+					<label for="colonia">Colonia</label><input type="text" name="colonia">
+					<label for="codigo">Codigo Postal</label><input type="text" name="codigo"></td>
+					<td><label for="telefono">Telefono</label><br><input type="text" name="telefono"></td>
+					<td><label for="codigo">Sexo</label><br><label for="sexo"><input type="radio" name="sexo">M</label>&emsp;&emsp;<label for="sexo"><input type="radio" name="sexo">F</label></td>
+				</tr>
+				<tr>
+					<td colspan="8"><label for="lugar">Lugar de Nacimiento</label><br><input type="text" name="lugar"></td>
+					<td><label for="fecha">Fecha de Nacimiento</label><br><input type="text" name="fecha"></td>
+					<td><label for="nacionalidad">Nacionalidad</label><br><label for="nacionalidad"><input type="radio" name="nacionalidad">M</label>&emsp;&emsp;<label for="nacionalidad"><input type="radio" name="nacionalidad">E</label></td>
+				</tr>
+				<tr>
+					<td colspan="8"><label for="vive">Vive con:</label><br>&emsp;&emsp;<label for="vive"><input type="radio" name="vive">Sus padres</label>&emsp;&emsp;<label for="vive"><input type="radio" name="vive">Su familia</label>&emsp;&emsp;<label for="vive"><input type="radio" name="vive">Pariente</label>&emsp;&emsp;<label for="vive"><input type="radio" name="vive">Otros</label></td>
+					<td><label for="estatura">Estatura</label><br><input type="text" name="estatura"></td>
+					<td><label for="peso">Peso</label><br><input type="text" name="peso">Kg.</td>
+				</tr>
+				<tr>
+					<td colspan="8"><label for="personas">Personas que dependen de usted:</label><br>&emsp;&emsp;<input type="checkbox" name="hijos">Hijos&emsp;&emsp;<input type="checkbox" name="conyuge">Conyuge&emsp;&emsp;<input type="checkbox" name="padres">Padres&emsp;&emsp;<input type="checkbox" name="otros">Otros</td>
+					<td colspan="2"><label for="estado">Sexo</label><br><label for="estado"><input type="radio" name="estado">Soltero</label>&emsp;&emsp;<label for="estado"><input type="radio" name="estado">Casado</label><input type="text">Otro</td>
+				</tr>
+			</table>
+	</fieldset>
+	<br><br>
+
+     <fieldset>
+		<legend align="center"><b>Documentacion</b></legend>
+	<table align="center" border="1" width="100%">
+		<tr>
+					<td colspan="2"><label for="curp">Clave Única del Registro de Población <b>(CURP)</b></label><br><input type="text" name="curp"></td>
+					<td colspan="2"><label for="afore">AFORE</label><br><input type="text" name="afore"></td>
+		</tr>	
+		<tr>
+			<td><label for="reg">Reg. Fed. Contribuyentes</label><br><input type="text" name="reg"></td>
+			<td><label for="numseguiridad">Numero de Seguridad Social</label><br><input type="text" name="numseguridad"></td>
+			<td><label for="cartilla">Cartilla Servicio Militar</label><br><input type="text" name="cartilla"></td>
+			<td><label for="pasaporte">Pasaporte No.</label><br><input type="text" name="pasaporte"></td>
+		</tr>
+		<tr>
+			<td><label for="licencia">Licencia de Manejo</label><br>&emsp;&emsp;<label for="licencia"><input type="radio" name="licencia">No</label>&emsp;&emsp;<label for="licencia"><input type="radio" name="licencia">Si</label></td>
+			<td><label for="claselicencia">Clase y Número de Licencia</label><br><input type="text" name="claselincencia"></td>
+			<td colspan="2"><label for="extranjero">Si es extranjero que documento le permite trabajar en el País</label><br><input type="text" name="extranjero"></td>
+		</tr>
+	</table>
+	</fieldset>
+	<br><br>
+
+			<fieldset>
+				<legend align="center"><b>Datos Personales</b></legend>
+				<table border="1" align="center" width="100%">
+					<tr>
+						<td><label for="salud">Actualmente ¿Como considera su estado de salud?</label><br>&emsp;&emsp;<label for="bueno"><input type="radio" name="salud">Bueno</label>&emsp;&emsp;<label for="regular"><input type="radio" name="salud">Regular</label>&emsp;&emsp;<label for="malo"><input type="radio" name="salud">Malo</label></td>
+						<td colspan="2"><label for="cronica">¿Padece de alguna enfermedad crónica?</label><br><input type="text" name="cronica"></td>
+					</tr>
+					<tr>
+						<td><label for="deporte">¿Que deporte pratica?</label><br><input type="text" name="deporte"></td>
+						<td><label for="clubsocial">¿Pertenece a algún Club Social Deportivo?</label><br><input type="text" name="clubsocial"></td>
+						<td><label for="pasatiempo">¿Cuál es su pasatiempo favorito?</label><br><input type="text" name="pasatiempo"></td>
+					</tr>
+					<tr>
+						<td colspan="3"><label for="meta">¿Cuál es su meta en la vida?</label><br><input type="text" name="meta"></td>
+					</tr>
+				</table>
+			</fieldset>
+			<br><br>
+
+			<fieldset>
+				<legend align="center"><b>Datos Personales</b></legend>
+				<table border="1" align="center" width="100%">
+					<thead>
+						<th>NOMBRE</th>
+						<th>VIVE</th>
+						<th>FINADO</th>
+						<th>DIRECCIÓN</th>
+						<th>OCUPACIÓN</th>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Padre <input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+						</tr>
+						<tr>
+							<td>Madre<input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+						</tr>
+						<tr>
+							<td>Esposa (o)<input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+						</tr>
+						<tr>
+							<td colspan="5">Nombre y edades de los hijos <br>Nombres:<input type="text">Edad:<input type="number"></td>
+						</tr>
+						<tr>
+							<td colspan="5">Nombre y edades de los hijos <br>Nombres:<input type="text">Edad:<input type="number"></td>
+						</tr>
+						<tr>
+							<td colspan="5">Nombre y edades de los hijos <br>Nombres:<input type="text">Edad:<input type="number"></td>
+						</tr>
+					</tbody>
+				</table>
+			</fieldset>
+			<br><br>
+
+			<fieldset>
+				<legend align="center"><b>Escolaridad</b></legend>
+				<table border="1" align="center" width="100%">
+					<thead>
+						<th>NOMBRE DE LA ESCUELA</th>
+						<th>DIRECCIÓN</th>
+						<th colspan="2">FECHAS DE A AÑO</th>
+						<th>TITULO RECIBIDO</th>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Primaria <input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+						</tr>
+						<tr>
+							<td>Secundaria<input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+						</tr>
+						<tr>
+							<td>Preparatoria<input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+						</tr>
+						<tr>
+							<td>Profesional<input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+						</tr>
+						<tr>
+							<td>Comercial u otras<input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+							<td><input type="text"></td>
+						</tr>
+						<tr>
+							<td colspan="5">Estudios que efectua en la actualidad: <br>
+							<label for="escuela">Escuela</label><input type="text" name="escuela">
+							<label for="horario">Horario</label><input type="text" name="horario">
+							<label for="curso">Curso o carrera</label><input type="text" name="curso">
+							<label for="grado">Grado</label><input type="text" name="grado">
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</fieldset>
+			<br><br>	
+
+			<fieldset>
+				<legend align="center"><b>Conocimientos Generales</b></legend>
+				<table border="1" align="center" width="100%">
+					<tr>
+						<td><label for="idioma">Que Idiomas domina</label><br><input type="text" name="idioma"></td>
+						<td><label for="oficiona">Que funciones de oficina domina</label><br><input type="text" name="oficiona"></td>
+					</tr>
+					<tr>
+						<td><label for="maquinas">Maquinas de Oficinas o taller que sepa manejar</label><br><input type="text" name="maquinas"></td>
+						<td><label for="software">Software que domina</label><br><input type="text" name="software"></td>
+					</tr>
+					<tr>
+						<td colspan="2"><label for="funciones">Otras funciones que domine</label><br><textarea name="funciones" id="funciones" cols="100" rows="3" placeholder="¿Qué mas domina?"></textarea></td>
+					</tr>
+				</table>
+			</fieldset>
+</body>
+</html>
