@@ -1,6 +1,6 @@
-@import url("botones.css");
+@import url('misbotones.css');
 ul#menu {
-	background-image: linear-gradient(90deg, #291643, #D35529);
+	background-image: linear-gradient(90deg, #129296, #139FA4);
 	background-color: green;
 	border-radius: 12px;
 	background-clip: padding-box;
@@ -20,6 +20,7 @@ ul#menu a{
 }
 
 ul#menu a:hover{
-	background-color: lime;
+	background-color: #632E7D;
 	text-decoration: none;
 }
+
