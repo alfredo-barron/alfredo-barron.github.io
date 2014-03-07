@@ -3,25 +3,82 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>Menú</title>
+	<title>Formulario Bootstrap!</title>
 	<link rel="stylesheet" href="css/bootstrap.css">
-	<link rel="stylesheet" href="css/styleone.css">
+	<link rel="stylesheet" href="css1/css/font-awesome.min.css">
+	<link rel="stylesheet" href="css/animate.css">
+	<link rel="stylesheet" href="css/estilo.css">
+	<link rel="stylesheet" href="css/style11.css">
 </head>
 <body class="container">
 	<div class="row">
-		<div class="col-md-10">
-			<h1 class="page-header">Hola Bootstrap Grid!</h1>
+		<div class="col-md-6 col-md-offset-3">
+			<form method="post" >
+	<label for="nombre">Nombre</label>
+	<input type="text" id="nombre"> <br>
+	<label for="sexo">Sexo</label>
+	<select name="sexo" id="sexo">
+		<option value="0" selected>Seleccionar uno...</option>
+		<option value="m">Masculino</option>
+		<option value="f">Femenino</option>
+	</select> <br>
+	<label for="password">Contraseña</label>
+	<input type="password" id="password"><br>
+	<label>Describe el motivo de tu visita</label>
+	<textarea name="comment" id="" cols="30" rows="10" placeholder="Comentarios"></textarea><br>
+	<!--<label for="rojo">
+	<input type="radio" id="rojo" name="color" value="Rojo" checked> Rojo</label>
+	<label for="azul">
+	<input type="radio" id="azul" name="color" value="Azul"> Azul</label>
+	<label for="amarillo">
+	<input type="radio" id="amarillo" name="color" value="Amarillo"> Amarillo</label>
+	<label for="verde">
+	<input type="radio" id="verde" name="color" value="Verde"> Verde</label>-->
+	<hr>
+	<div class="radio-group">
+		<input type="radio" id="rojo" name="color" value="Rojo" checked>
+		<label for="rojo">Rojo</label>
+		<input type="radio" id="azul" name="color" value="Azul"> 
+		<label for="azul">Azul</label>
+		<input type="radio" id="amarillo" name="color" value="Amarillo"> 
+		<label for="amarillo">Amarillo</label>
+		<input type="radio" id="verde" name="color" value="Verde"> 
+		<label for="verde">Verde</label>
+	</div>
+	<hr>
+	<!--<fieldset>
+	<legend>Sabores</legend>
+	<label for="chocolate">
+	<input type="checkbox" id="chocolate" name="sabores" value="Chocolate" checked> Chocolate</label>
+	<label for="fresa">
+	<input type="checkbox" id="fresa" name="sabores" value="Fresa" checked> Fresa</label>
+	<label for="vainilla">
+	<input type="checkbox" id="vainilla" name="sabores" value="Vainilla"> Vainilla</label>
+	<label for="napolitano">
+	<input type="checkbox" id="napolitano" name="sabores" value="Napolitano"> Napolitano</label>
+	</fieldset>-->
+	<hr>
+	<fieldset>
+	<legend>Sabores</legend>
+	<input type="checkbox" id="chocolate" name="sabores" value="Chocolate" checked> 
+	<label for="chocolate">Chocolate</label>
+	<input type="checkbox" id="fresa" name="sabores" value="Fresa" checked> 
+	<label for="fresa">Fresa</label>
+	<input type="checkbox" id="vainilla" name="sabores" value="Vainilla"> 
+	<label for="vainilla">Vainilla</label>
+	<input type="checkbox" id="napolitano" name="sabores" value="Napolitano"> 
+	<label for="napolitano">Napolitano</label>
+	</fieldset>
+	<br>
+	<label for="archivo">Archivo</label>
+	<input type="file" id="archivo">
+	<br>
+	<input type="submit" id="guardar" name="guardar" value="Guardar">
+	<button>Botón</button>
+	<input type="hidden" value="clave secreta">
+	</form>		
 		</div>
 	</div>
-	<div class="row">
-		<div class="col-md-12">
-			<ul id="menu" class="list-inline">
-				<li><a href="#1">Opcion 1</a></li>
-				<li><a href="#2">Opcion 2</a></li>
-				<li><a href="#3">Opcion 3</a></li>
-				<li><a href="#4">Opcion 4</a></li>
-			</ul>
-		</div>
-	</div>	
+	
 </body>
 </html>
