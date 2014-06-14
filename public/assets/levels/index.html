@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+	<head>
+    		<script src="phaser.min.js"></script>
+    		<script type="text/javascript">
+			
+			var w = 600;
+    		var h = 400;
+			var game = new Phaser.Game(w, h, Phaser.CANVAS, 'div_game', { preload: preload, create: create, update: update, render: render });
+		
+				function preload() {
+				
+					game.load.tilemap("level", "levels/mapa1.json", null, Phaser.Tilemap.TILED_JSON);
+					game.load.image("tiles", "images/tiled.png");
+					//game.load.image("tiles1","images/la03a0l.png", 40, 40);
+					//game.load.image("tiles2", "images/floor.jpg");
+					game.load.image("hero", "images/enemy.png");
+					game.load.image('door', "images/door.png");
+					game.load.image('enemys', "images/wabbit.png");
+				}
+				
+				var map;
+				var layer;
+				var player;
+				var cursors;	
+				var door;
+				var enemys;
+
+				function create() {
+					game.physics.startSystem(Phaser.Physics.ARCADE);
+
+					map = game.add.tilemap("level");
+	                
+	                map.addTilesetImage('tiles');    
+	                //map.addTilesetImage('tiles1');  
+	                //map.addTilesetImage('tiles2');  
+	                
+	                map.setCollisionBetween(1, 3);
+
+	                layer = map.createLayer('Nivel 1');
+
+	                layer.resizeWorld();
+
+	                game.physics.startSystem(Phaser.Physics.ARCADE);
+						
+	                door = game.add.sprite(320, 280, 'door');
+
+	                enemys = game.add.group();
+    				enemys.createMultiple(45, 'enemys');
+    				enemys.enableBody = true;
+    				game.physics.arcade.enable(enemys,true);
+
+					player = game.add.sprite(320, 320, "hero");
+					player.direction = 2;
+					player.alive = true;
+					game.camera.follow(player);
+					game.physics.arcade.enable(player);
+
+					player.body.gravity.y = 0;
+	                    cursors = game.input.keyboard.createCursorKeys();
+				}
+
+				function update() {
+					game.physics.arcade.collide(player, layer);
+					game.physics.arcade.collide(enemys, layer);
+					game.physics.arcade.overlap(player, enemys, batalla, null, this);
+					iniciar_juego();
+					player_movements();
+					//camera_movements();
+	    			}
+	    		function render() {
+
+	    		}
+	    		function player_movements() {
+	    			player.body.velocity.x = 0;
+					player.body.velocity.y = 0;
+					if (cursors.left.isDown){
+	        				player.body.velocity.x = -150;
+	        			}
+					if (cursors.right.isDown){
+	        				player.body.velocity.x = 150;
+	        			}
+					if (cursors.up.isDown){
+	        				player.body.velocity.y = -150;
+	     			}
+	     			if (cursors.down.isDown){
+	        				player.body.velocity.y = 150;
+	     			}
+	    		}
+	    		function iniciar_juego(){
+	    			agregar_enemigo(560, 340);
+	    			agregar_enemigo(610, 490);
+	    			agregar_enemigo(400, 490);
+	    		}
+	    		function agregar_enemigo(y, x) {
+	    			var m = enemys.getFirstExists(false);
+	    			if(m){	
+	    			m.reset(x, y);
+	    			}
+	    		}
+	    		function batalla(player, m) {
+	    			m.kill();
+	    		}
+		</script> 
+    </head>
+    <body>
+    	<div id="div_game"></div>
+    </body>
+</html>

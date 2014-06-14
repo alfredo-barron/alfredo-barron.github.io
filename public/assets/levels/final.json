@@ -1,0 +1,39 @@
+{ "height":9,
+ "layers":[
+        {
+         "data":[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 0, 24, 0, 0, 0, 0, 0, 0, 0, 24, 0, 24, 0, 15, 8, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 8, 16, 6, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 6, 6, 6, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 6, 6, 15, 8, 19, 8, 8, 8, 8, 8, 8, 8, 8, 8, 19, 8, 16, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
+         "height":9,
+         "name":"Nivel 1",
+         "opacity":1,
+         "type":"tilelayer",
+         "visible":true,
+         "width":15,
+         "x":0,
+         "y":0
+        }],
+ "orientation":"orthogonal",
+ "properties":
+    {
+
+    },
+ "tileheight":60,
+ "tilesets":[
+        {
+         "firstgid":1,
+         "image":"..\/img\/Tilesmapa.png",
+         "imageheight":240,
+         "imagewidth":360,
+         "margin":0,
+         "name":"Tilesmapa",
+         "properties":
+            {
+
+            },
+         "spacing":0,
+         "tileheight":60,
+         "tilewidth":60
+        }],
+ "tilewidth":60,
+ "version":1,
+ "width":15
+}

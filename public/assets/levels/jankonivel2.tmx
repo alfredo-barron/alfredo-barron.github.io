@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="25" height="25" tilewidth="60" tileheight="60">
+ <tileset firstgid="1" name="Tilesmapa" tilewidth="60" tileheight="60">
+  <image source="../../../var/www/Janko/public/assets/img/Tilesmapa.png" width="360" height="240"/>
+ </tileset>
+ <layer name="Nivel 1" width="25" height="25">
+  <data encoding="base64" compression="zlib">
+   eJztlMEKgCAMhueh0iwi7P2fNQ8OZEyjTS/l4GfMg99+pxoAMEO/16TQG8YatTC6CutewJiBj9q6lrGnvKVMfZ4KBu5NmVwtZWC2pG/H9KBl1PrXMrB/n2o6D/TTYuY95hGijmwPS2pkoB/NvSoFnplmHgH495x7oazWPmhIGPQ9PMkJGL3/3aFv6wa83QWl
+  </data>
+ </layer>
+ <objectgroup name="Collision" width="25" height="25" visible="0">
+  <object x="362" y="362" width="777" height="117"/>
+  <object x="781" y="481" width="60" height="119"/>
+  <object x="901" y="539" width="58" height="181"/>
+  <object x="662" y="660" width="242" height="60"/>
+  <object x="660" y="539" width="60" height="121"/>
+  <object x="542" y="540" width="117" height="59"/>
+  <object x="362" y="481" width="117" height="658"/>
+  <object x="541" y="602" width="59" height="238"/>
+  <object x="603" y="782" width="116" height="58"/>
+  <object x="482" y="902" width="179" height="59"/>
+  <object x="781" y="782" width="120" height="58"/>
+  <object x="782" y="843" width="58" height="177"/>
+  <object x="479" y="1020" width="659" height="120"/>
+  <object x="901" y="901" width="120" height="59"/>
+  <object x="1021" y="482" width="117" height="537"/>
+ </objectgroup>
+</map>
