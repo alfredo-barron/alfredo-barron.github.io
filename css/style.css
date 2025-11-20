@@ -1,10 +1,34 @@
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      margin: 0;
       font-family: 'Segoe UI', sans-serif;
       background: #121212;
       color: #eee;
       scroll-behavior: smooth;
+    }
+    nav {
+      background: #1e1e1e;
+      padding: 1em 0;
+      position: sticky;
+      top: 0;
+      width: 100%;
+      z-index: 999;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+    nav ul {
+      list-style: none;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 2em;
+    }
+    nav a {
+      color: #00ffc3;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.3s;
+    }
+    nav a:hover {
+      color: #fff;
     }
     header, section, footer {
       padding: 3em 1.5em;
