@@ -1,135 +1,467 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Alfredo Barrón Rodríguez, Doctor en Ciencias, Maestro en Ciencias e Ingeniero en TICs. Investigador en computación distribuida, IoT, datos e IA aplicada a agricultura inteligente.">
   <title>Dr. Alfredo Barrón Rodríguez</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-	<link rel="stylesheet" href="css/style.css">
+  <meta name="description" content="Dr. Alfredo Barrón Rodríguez — miembro del SNII (Candidato) y profesor-investigador del TecNM / Instituto Tecnológico de Ciudad Valles. Sistemas distribuidos Edge–Fog–Cloud, IoT y agricultura digital en la Huasteca Potosina.">
+  <meta name="author" content="Alfredo Barrón Rodríguez">
+  <meta property="og:type" content="profile">
+  <meta property="og:locale" content="es_MX">
+  <meta property="og:title" content="Dr. Alfredo Barrón Rodríguez">
+  <meta property="og:description" content="SNII · Candidato a Investigador Nacional · TecNM Ciudad Valles · Edge–Fog–Cloud, IoT y agricultura digital.">
+  <meta property="og:url" content="https://alfredo-barron.github.io/">
+  <meta property="og:image" content="https://alfredo-barron.github.io/img/alfredo-avatar.jpg">
+  <meta name="twitter:card" content="summary">
+  <meta name="theme-color" content="#0c1729">
+  <link rel="icon" type="image/png" href="img/favicon.png">
+  <link rel="apple-touch-icon" href="img/alfredo-avatar.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    document.documentElement.classList.add('js');
+    try { var t = localStorage.getItem('theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Alfredo Barrón Rodríguez",
+    "honorificPrefix": "Dr.",
+    "jobTitle": "Profesor-investigador",
+    "url": "https://alfredo-barron.github.io/",
+    "image": "https://alfredo-barron.github.io/img/alfredo-retrato.jpg",
+    "email": "mailto:alfredo.br@cdvalles.tecnm.mx",
+    "worksFor": { "@type": "CollegeOrUniversity", "name": "Tecnológico Nacional de México / Instituto Tecnológico de Ciudad Valles" },
+    "alumniOf": [
+      { "@type": "CollegeOrUniversity", "name": "Cinvestav Unidad Tamaulipas" },
+      { "@type": "CollegeOrUniversity", "name": "Tecnológico Nacional de México" }
+    ],
+    "address": { "@type": "PostalAddress", "addressLocality": "Ciudad Valles", "addressRegion": "San Luis Potosí", "addressCountry": "MX" },
+    "knowsAbout": ["Sistemas distribuidos", "Edge computing", "Fog computing", "Cloud computing", "Internet de las Cosas", "Ingeniería de datos", "Agricultura digital"],
+    "identifier": { "@type": "PropertyValue", "propertyID": "CVU", "value": "783752" },
+    "sameAs": [
+      "https://orcid.org/0000-0002-2675-6071",
+      "https://scholar.google.com/citations?user=89hwiWsAAAAJ",
+      "https://www.researchgate.net/profile/Alfredo-Barron-Rodriguez",
+      "https://www.linkedin.com/in/alfredobarronr/",
+      "https://github.com/alfredo-barron"
+    ]
+  }
+  </script>
 </head>
 
 <body>
-  <nav>
-    <ul>
-      <li><a href="#about">Sobre mí</a></li>
-      <li><a href="#research">Investigación</a></li>
-      <li><a href="#projects">Proyectos</a></li>
-      <li><a href="#publications">Publicaciones</a></li>
-      <li><a href="#teaching">Docencia</a></li>
-      <li><a href="#contact">Contacto</a></li>
-    </ul>
-  </nav>
+  <a class="skip" href="#main">Saltar al contenido</a>
+  <div class="progress" aria-hidden="true"><span id="progress"></span></div>
 
-  <header class="hero">
-    <img src="img/alfredo.jpg" alt="Foto de Alfredo Barrón Rodríguez">
-    <h1>Dr. Alfredo Barrón Rodríguez</h1>
-    <p>Doctor, Maestro e Ingeniero en Tecnologías Computacionales y TICs. Investigador, docente y desarrollador.</p>
-    <div class="social-icons">
-      <a href="https://www.linkedin.com/in/alfredobarronr/" class="fa fa-linkedin"></a>
-      <a href="https://github.com/alfredo-barron" class="fa fa-github"></a>
-      <a href="mailto:alfreedobarron@gmail.com" class="fa fa-envelope"></a>
+  <!-- ================= NAV ================= -->
+  <header class="topbar" id="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="#top" aria-label="Inicio">
+        <img src="img/alfredo-avatar.jpg" alt="" width="34" height="34">
+        <span>Alfredo Barrón<em>.</em></span>
+      </a>
+      <nav id="menu" aria-label="Secciones">
+        <ul>
+          <li><a href="#perfil">Perfil</a></li>
+          <li><a href="#investigacion">Investigación</a></li>
+          <li><a href="#proyectos">Proyectos</a></li>
+          <li><a href="#publicaciones">Publicaciones</a></li>
+          <li><a href="#docencia">Docencia</a></li>
+          <li><a href="#divulgacion">Divulgación</a></li>
+          <li><a href="#contacto">Contacto</a></li>
+        </ul>
+      </nav>
+      <div class="top-actions">
+        <button class="icon-btn" id="themeBtn" type="button" aria-label="Cambiar tema claro/oscuro">
+          <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+        <button class="icon-btn burger" id="burger" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
     </div>
   </header>
 
-  <section id="about">
-    <h2 class="section-title">Sobre mí</h2>
-    <div class="card">
-      <p>Doctor en Ciencias en Ingeniería y Tecnologías Computacionales, Maestro en Ciencias e Ingeniero en TICs. Apasionado por la computación distribuida, agricultura digital, sistemas inteligentes y tecnologías emergentes. Actualmente soy profesor en el TecNM y CBTis 46, colaborando en proyectos que integran IoT, datos, inteligencia artificial y sostenibilidad.</p>
+  <main id="main">
+    <!-- ================= HERO ================= -->
+    <section class="hero" id="top">
+      <canvas id="net" aria-hidden="true"></canvas>
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="wrap hero-grid">
+        <div class="hero-text">
+          <div class="badges">
+            <span class="badge badge-snii"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17l-6.1 3.4 1.5-6.8L2.2 9l6.9-.7z"/></svg>SNII · Candidato a Investigador Nacional</span>
+            <span class="badge">TecNM · IT Ciudad Valles</span>
+          </div>
+          <p class="hello">Hola, soy</p>
+          <h1>Dr. Alfredo<br><span class="hl">Barrón Rodríguez</span></h1>
+          <p class="role">Profesor-investigador en <span class="rotator" id="rotator" aria-live="polite">sistemas distribuidos</span><span class="caret" aria-hidden="true"></span></p>
+          <p class="lede">Diseño infraestructuras de datos <strong>Edge–Fog–Cloud</strong> y las llevo al campo de la <strong>Huasteca Potosina</strong>: sensores, drones y plataformas en la nube para conservar el maíz nativo y apoyar decisiones basadas en datos.</p>
+          <div class="cta">
+            <a class="btn btn-primary" href="#proyectos">Conoce mis proyectos</a>
+            <a class="btn btn-ghost" href="mailto:alfredo.br@cdvalles.tecnm.mx">alfredo.br@cdvalles.tecnm.mx</a>
+          </div>
+          <ul class="ids" aria-label="Perfiles académicos">
+            <li><a href="https://orcid.org/0000-0002-2675-6071" target="_blank" rel="noopener">ORCID</a></li>
+            <li><a href="https://scholar.google.com/citations?user=89hwiWsAAAAJ&amp;hl=es" target="_blank" rel="noopener">Google Scholar</a></li>
+            <li><a href="https://www.researchgate.net/profile/Alfredo-Barron-Rodriguez" target="_blank" rel="noopener">ResearchGate</a></li>
+            <li><a href="https://www.linkedin.com/in/alfredobarronr/" target="_blank" rel="noopener">LinkedIn</a></li>
+            <li><a href="https://github.com/alfredo-barron" target="_blank" rel="noopener">GitHub</a></li>
+          </ul>
+        </div>
+
+        <figure class="portrait" id="portrait">
+          <div class="portrait-frame">
+            <img src="img/alfredo-retrato.jpg" alt="Dr. Alfredo Barrón Rodríguez, con camisa del Tecnológico Nacional de México" width="372" height="664">
+          </div>
+          <figcaption>
+            <strong>Dr. Alfredo Barrón Rodríguez</strong>
+            <span>Depto. de Sistemas y Computación · CVU 783752</span>
+          </figcaption>
+          <span class="chip chip-a" aria-hidden="true">☁ Cloud</span>
+          <span class="chip chip-b" aria-hidden="true">◈ Fog</span>
+          <span class="chip chip-c" aria-hidden="true">● Edge · IoT</span>
+        </figure>
+      </div>
+
+      <div class="wrap">
+        <dl class="stats">
+          <div class="reveal"><dt><span class="count" data-to="32">32</span></dt><dd>citas a mis artículos</dd></div>
+          <div class="reveal"><dt><span class="count" data-to="3">3</span></dt><dd>desarrollos tecnológicos (TRL 4–5)</dd></div>
+          <div class="reveal"><dt><span class="count" data-to="3">3</span></dt><dd>tesis dirigidas o codirigidas</dd></div>
+          <div class="reveal"><dt><span class="count" data-to="22">22</span></dt><dd>comunidades en campo con AgroMaíz</dd></div>
+        </dl>
+      </div>
+      <a class="scroll-hint" href="#perfil" aria-label="Bajar a Perfil"><span></span></a>
+    </section>
+
+    <!-- ================= PERFIL ================= -->
+    <section id="perfil" class="block">
+      <div class="wrap two-col">
+        <header class="block-head reveal">
+          <p class="kicker">01 — Perfil</p>
+          <h2>Ingeniería computacional con impacto social</h2>
+        </header>
+        <div>
+          <div class="prose reveal">
+            <p>Soy <strong>Doctor y Maestro en Ciencias en Ingeniería y Tecnologías Computacionales</strong> por el Cinvestav Unidad Tamaulipas e Ingeniero en Tecnologías de la Información y Comunicaciones por el TecNM. Desde agosto de 2024 soy profesor-investigador del Departamento de Sistemas y Computación del <strong>Instituto Tecnológico de Ciudad Valles</strong>, y formo parte del <strong>Sistema Nacional de Investigadoras e Investigadores (SNII)</strong>.</p>
+            <p>Diseño, analizo e implemento sistemas distribuidos para almacenar, procesar y analizar datos a gran escala. He participado en plataformas de datos para <strong>salud</strong>, <strong>servicios digitales</strong> y <strong>agricultura</strong>, y hoy consolido una línea de investigación en sistemas computacionales aplicados a problemas socioambientales: el monitoreo agroclimático y la conservación de sistemas agroecológicos de la Huasteca Potosina.</p>
+            <p>Creo en una ingeniería que resuelve problemas reales y fortalece las capacidades tecnológicas del país, empezando por la región donde vivo.</p>
+          </div>
+
+          <ul class="pills reveal" aria-label="Datos clave">
+            <li><span>SNII · SECIHTI</span>Candidato a Investigador Nacional</li>
+            <li><span>Cuerpos Académicos</span>ITCVAL-CA-01 · CA-02 · CA-03</li>
+            <li><span>Idiomas</span>Español · Inglés (intermedio, certificado)</li>
+            <li><span>Área</span>Ingenierías y desarrollo tecnológico</li>
+          </ul>
+
+          <h3 class="sub reveal">Trayectoria</h3>
+          <ol class="timeline">
+            <li class="reveal"><span class="when">2026</span><div><b>Distinción SNII: Candidato a Investigador Nacional</b><small>Sistema Nacional de Investigadoras e Investigadores · SECIHTI</small></div></li>
+            <li class="reveal"><span class="when">2024 – hoy</span><div><b>Profesor-investigador, TecNM / IT Ciudad Valles</b><small>Docencia en Ing. en Inteligencia Artificial, Ing. en Desarrollo de Aplicaciones e Ing. en Sistemas Computacionales; responsable técnico de proyectos de I+D</small></div></li>
+            <li class="reveal"><span class="when">2024</span><div><b>Docente, CBTis No. 46</b><small>Técnico en Programación</small></div></li>
+            <li class="reveal"><span class="when">2023</span><div><b>Doctorado en Ciencias en Ingeniería y Tecnologías Computacionales</b><small>Cinvestav Unidad Tamaulipas · Asesor: Dr. José Luis González Compeán</small></div></li>
+            <li class="reveal"><span class="when">2022</span><div><b>Estancia de investigación, CICESE</b><small>Evaluación de esquemas de distribución de datos sensibles al contexto en infraestructura de alto rendimiento (sep – dic)</small></div></li>
+            <li class="reveal"><span class="when">2020 – 2023</span><div><b>Colaborador, proyecto FORDECYT 41756 (Muyal-Ilal)</b><small>Almacenamiento tolerante a fallas para datos de salud, Cinvestav Tamaulipas</small></div></li>
+            <li class="reveal"><span class="when">Maestría</span><div><b>Maestría en Ciencias en Ingeniería y Tecnologías Computacionales</b><small>Cinvestav Unidad Tamaulipas · Becario CONACYT</small></div></li>
+            <li class="reveal"><span class="when">Ingeniería</span><div><b>Ingeniería en Tecnologías de la Información y Comunicaciones</b><small>Tecnológico Nacional de México</small></div></li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= INVESTIGACIÓN ================= -->
+    <section id="investigacion" class="block block-tint">
+      <div class="wrap">
+        <header class="block-head reveal">
+          <p class="kicker">02 — Investigación</p>
+          <h2>Del sensor a la nube</h2>
+          <p class="head-note">Ingeniería de datos y gestión de información, infraestructura de datos distribuidos y aplicaciones inteligentes orientadas a problemas reales.</p>
+        </header>
+
+        <div class="layers reveal" aria-label="Arquitectura Edge–Fog–Cloud">
+          <div class="layer layer-cloud"><span class="layer-name">Cloud</span><p>Almacenamiento y análisis a gran escala, repositorios FAIR, servicios en la nube.</p></div>
+          <div class="layer layer-fog"><span class="layer-name">Fog</span><p>Contenedores de datos, caché distribuida y replicación cerca del usuario.</p></div>
+          <div class="layer layer-edge"><span class="layer-name">Edge</span><p>Sensores IoT, estaciones meteorológicas, redes LoRa y drones multiespectrales.</p></div>
+        </div>
+
+        <div class="cards cards-4">
+          <article class="card reveal">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4 4 0 0 1-.5-7.97A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9H7z"/></svg>
+            <h3>Cómputo Edge–Fog–Cloud</h3>
+            <p>Arquitecturas que reparten procesamiento y almacenamiento entre dispositivos, nodos intermedios y la nube para reducir latencia.</p>
+          </article>
+          <article class="card reveal">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/></svg>
+            <h3>Infraestructura de datos</h3>
+            <p>Almacenamiento tolerante a fallas, replicación y esquemas de distribución sensibles al contexto para microservicios.</p>
+          </article>
+          <article class="card reveal">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9M12 9c0-3 2-5 5-5 0 3-2 5-5 5zM12 13c0-3-2-5-5-5 0 3 2 5 5 5z"/></svg>
+            <h3>Agricultura digital</h3>
+            <p>Monitoreo agroclimático, análisis geoespacial y conservación de sistemas agroecológicos.</p>
+          </article>
+          <article class="card reveal">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z"/></svg>
+            <h3>Datos de salud</h3>
+            <p>Plataformas e-salud para gestionar, preservar e intercambiar grandes volúmenes de datos clínicos.</p>
+          </article>
+        </div>
+
+        <div class="skills reveal">
+          <h3 class="sub">Herramientas y competencias</h3>
+          <div class="skill-grid">
+            <div class="skill" style="--v:100"><span>Sistemas distribuidos</span><i></i></div>
+            <div class="skill" style="--v:100"><span>Cómputo en la nube</span><i></i></div>
+            <div class="skill" style="--v:100"><span>Arquitecturas de datos distribuidos</span><i></i></div>
+            <div class="skill" style="--v:100"><span>Python</span><i></i></div>
+            <div class="skill" style="--v:100"><span>Bases de datos SQL y NoSQL</span><i></i></div>
+            <div class="skill" style="--v:75"><span>Edge–Fog–Cloud computing</span><i></i></div>
+            <div class="skill" style="--v:75"><span>Docker / contenedores</span><i></i></div>
+            <div class="skill" style="--v:75"><span>Microservicios</span><i></i></div>
+            <div class="skill" style="--v:75"><span>Big data</span><i></i></div>
+            <div class="skill" style="--v:75"><span>Ciencia de datos</span><i></i></div>
+            <div class="skill" style="--v:50"><span>IA aplicada</span><i></i></div>
+            <div class="skill" style="--v:50"><span>Análisis geoespacial / SIG</span><i></i></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PROYECTOS ================= -->
+    <section id="proyectos" class="block">
+      <div class="wrap">
+        <header class="block-head reveal">
+          <p class="kicker">03 — Proyectos y desarrollos tecnológicos</p>
+          <h2>Tecnología que sale del laboratorio</h2>
+        </header>
+
+        <article class="feature reveal">
+          <div class="feature-body">
+            <p class="tag">SECIHTI · Ejes Estratégicos 2025 · PEE-2025-G-369 · Responsable técnico</p>
+            <h3>AgroMaíz: Agroplataforma Digital de Monitoreo para la Conservación del Maíz Nativo en la Huasteca Potosina</h3>
+            <p>Plataforma para el monitoreo, la gestión y el análisis de información agroecológica del maíz nativo. Integra datos geoespaciales, climáticos y productivos de sensores IoT, registros de campo e imágenes multiespectrales con drones, sobre una arquitectura distribuida en la nube. Incluye mapas, consulta de variables agroclimáticas, gestión de parcelas y análisis de datos. Coordino el desarrollo tecnológico, el trabajo de campo y un equipo interdisciplinario de computación, agronomía, fitopatología, SIG y ciencias ambientales.</p>
+            <ul class="stack" aria-label="Infraestructura">
+              <li>Dron DJI Mavic 3 Multiespectral</li>
+              <li>Estación meteorológica IoT</li>
+              <li>Red LoRa</li>
+              <li>PostgreSQL / PostGIS</li>
+              <li>SIG</li>
+              <li>TRL 4</li>
+            </ul>
+            <p class="status"><span class="dot"></span>Etapa 1 aprobada por SECIHTI · Etapa 2 en curso (oct 2026 – sep 2027)</p>
+          </div>
+          <dl class="feature-stats">
+            <div><dt><span class="count" data-to="22">22</span></dt><dd>comunidades documentadas</dd></div>
+            <div><dt><span class="count" data-to="10">10</span></dt><dd>municipios de la Huasteca</dd></div>
+            <div><dt><span class="count" data-to="7">7</span></dt><dd>variantes de maíz nativo</dd></div>
+            <div><dt><span class="count" data-to="64">64</span></dt><dd>submuestras en vivero</dd></div>
+          </dl>
+        </article>
+
+        <div class="cards cards-2">
+          <article class="card card-lg reveal">
+            <p class="tag">FORDECYT 41756 · CONACYT · 2020 – 2023 · TRL 5</p>
+            <h3>Almacenamiento tolerante a fallas para Muyal-Ilal</h3>
+            <p>Diseño, integración y validación de mecanismos de almacenamiento distribuido, replicación y recuperación ante fallas para una plataforma nacional de datos de salud con arquitectura Edge–Fog–Cloud.</p>
+          </article>
+          <article class="card card-lg reveal">
+            <p class="tag">Software · 2020 – 2023 · TRL 4</p>
+            <h3>ALWA — repositorio de servicios, datos y contenidos para e-salud</h3>
+            <p>Repositorio basado en principios FAIR para publicar e interoperar datos, metadatos y servicios digitales. Con código fuente, manual de despliegue y videos de demostración.</p>
+          </article>
+          <article class="card reveal">
+            <p class="tag">Investigación doctoral · Cinvestav</p>
+            <h3>Contenedores de datos y caché distribuida</h3>
+            <p>Esquemas de distribución sensibles al contexto que categorizan microservicios, contienen su E/S en almacenamiento jerárquico y reducen peticiones a la nube; implementaciones en Rust con gRPC y memoria compartida.</p>
+          </article>
+          <article class="card reveal">
+            <p class="tag">Propuesta 2026</p>
+            <h3>Agroplataforma para caña de azúcar</h3>
+            <p>Monitoreo y análisis geoespacial del cultivo de caña de azúcar, a partir de la experiencia de AgroMaíz y del uso de mapas espectrales en la región.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PUBLICACIONES ================= -->
+    <section id="publicaciones" class="block block-tint">
+      <div class="wrap two-col">
+        <header class="block-head reveal">
+          <p class="kicker">04 — Publicaciones</p>
+          <h2>Producción científica</h2>
+          <p class="head-note">Lista actualizada en <a href="https://scholar.google.com/citations?user=89hwiWsAAAAJ&amp;hl=es" target="_blank" rel="noopener">Google Scholar</a> y <a href="https://orcid.org/0000-0002-2675-6071" target="_blank" rel="noopener">ORCID</a>.</p>
+        </header>
+        <ol class="pubs">
+          <li class="reveal">
+            <p class="pub-meta"><span class="pub-type">Artículo · autor principal</span> 2022 <span class="cites">14 citas</span></p>
+            <p class="pub-title"><a href="https://doi.org/10.3390/s22187016" target="_blank" rel="noopener">On the Efficient Delivery and Storage of IoT Data in Edge–Fog–Cloud Environments</a></p>
+            <p class="pub-authors"><b>A. Barrón</b>, D. D. Sánchez-Gallegos, D. Carrizales-Espinoza, J. L. González-Compeán, M. Morales-Sandoval</p>
+            <p class="pub-venue"><i>Sensors</i>, 22(18), 7016 · <span class="mono">doi:10.3390/s22187016</span></p>
+          </li>
+          <li class="reveal">
+            <p class="pub-meta"><span class="pub-type">Artículo · coautor</span> 2020 <span class="cites">18 citas</span></p>
+            <p class="pub-title"><a href="https://doi.org/10.1109/TCC.2020.2968444" target="_blank" rel="noopener">Improving Performance and Capacity Utilization in Cloud Storage for Content Delivery and Sharing Services</a></p>
+            <p class="pub-authors">V. J. Sosa-Sosa, <b>A. Barrón</b>, J. L. González-Compeán, J. Carretero, I. López-Arévalo</p>
+            <p class="pub-venue"><i>IEEE Transactions on Cloud Computing</i> · <span class="mono">doi:10.1109/TCC.2020.2968444</span></p>
+          </li>
+          <li class="reveal">
+            <p class="pub-meta"><span class="pub-type">Tesis doctoral</span> 2023</p>
+            <p class="pub-title"><a href="https://repositorio.cinvestav.mx/bitstream/handle/cinvestav/6203/SSIT0019530.pdf?sequence=1&amp;isAllowed=y" target="_blank" rel="noopener">Esquemas de distribución sensibles al contexto para el manejo de recursos de almacenamiento de datos en entornos de microservicios</a></p>
+            <p class="pub-venue">Cinvestav Unidad Tamaulipas · Asesor: J. L. González Compeán</p>
+          </li>
+          <li class="reveal">
+            <p class="pub-meta"><span class="pub-type">Informes técnicos</span> 2023</p>
+            <p class="pub-title">Muyal ALWA: repositorio de servicios, datos, contenidos y resultados producidos por sistemas de e-salud · Reporte técnico de la plataforma Muyal-Ilal</p>
+            <p class="pub-venue">Cinvestav</p>
+          </li>
+          <li class="reveal">
+            <p class="pub-meta"><span class="pub-type">Capítulo de libro</span> 2019</p>
+            <p class="pub-title">Arquitectura para la construcción de sistemas de compartición de archivos en la nube basada en micro-aplicaciones</p>
+            <p class="pub-authors"><b>A. Barrón</b>, J. L. González</p>
+            <p class="pub-venue">Cinvestav Unidad Tamaulipas · Capítulo 3 · <span class="mono">ISBN 978-607-9023-62-1</span></p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ================= DOCENCIA ================= -->
+    <section id="docencia" class="block">
+      <div class="wrap">
+        <header class="block-head reveal">
+          <p class="kicker">05 — Docencia y formación</p>
+          <h2>Formando a la siguiente generación</h2>
+        </header>
+
+        <div class="teach-grid">
+          <div class="reveal">
+            <h3 class="sub">Cursos impartidos</h3>
+            <div class="course-groups">
+              <div>
+                <p class="prog">Maestría en Inteligencia Artificial</p>
+                <ul class="chips"><li>Modelos Estadísticos para Aprendizaje Automático y Ciencia de Datos</li><li>Deep Learning (materiales)</li></ul>
+              </div>
+              <div>
+                <p class="prog">Ing. en Inteligencia Artificial</p>
+                <ul class="chips"><li>Cómputo en la Nube</li><li>Programación para IA</li><li>Cómputo Paralelo</li><li>Matemáticas Discretas</li><li>Fundamentos de Programación</li></ul>
+              </div>
+              <div>
+                <p class="prog">Ing. en Desarrollo de Aplicaciones</p>
+                <ul class="chips"><li>Sistemas Operativos</li><li>Diseño Centrado en el Usuario</li><li>Matemáticas Discretas</li></ul>
+              </div>
+              <div>
+                <p class="prog">Ing. en Sistemas Computacionales</p>
+                <ul class="chips"><li>Arquitectura de Computadoras</li><li>Desarrollo de Aplicaciones Móviles Multiplataforma</li></ul>
+              </div>
+              <div>
+                <p class="prog">Otras ingenierías</p>
+                <ul class="chips"><li>Cómputo Suave</li><li>Simulación</li><li>Cálculo Integral</li></ul>
+              </div>
+              <div>
+                <p class="prog">Cinvestav (asistente, 4.5 años)</p>
+                <ul class="chips"><li>Sistemas Distribuidos</li><li>Tópicos Selectos de Sistemas Distribuidos</li></ul>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="reveal">
+              <h3 class="sub">Tesis dirigidas</h3>
+              <ul class="theses">
+                <li><b>Estimación de índice de producción a través de mapas espectrales aplicado a los cultivos de caña de azúcar</b><small>Maestría · TecNM · Codirector · 2025</small></li>
+                <li><b>Estrategia basada en un módulo informático para la gestión de datos en ovitrampas entomológicas del vector <i>Aedes aegypti</i></b><small>Licenciatura · ICEST · Director · 2025</small></li>
+                <li><b>Fortalecimiento de la seguridad de la información en una organización mediante prácticas de ciberseguridad</b><small>Licenciatura · ICEST · Director · 2025</small></li>
+              </ul>
+            </div>
+            <div class="reveal">
+              <h3 class="sub">Diseño curricular</h3>
+              <ul class="bullets">
+                <li>Asignaturas <b>Ingeniería de Datos</b> y <b>Metodologías Ágiles con DevOps</b> para la especialidad Tecnologías Full Stack y DevOps de Ing. en Sistemas Computacionales (2025).</li>
+                <li>Asesoría de residencias profesionales y educación dual en IA multiplataforma; tutor de primer y segundo semestre (IDAP e IIA).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= DIVULGACIÓN ================= -->
+    <section id="divulgacion" class="block block-dark">
+      <div class="wrap">
+        <header class="block-head reveal">
+          <p class="kicker">06 — Divulgación y comunidad</p>
+          <h2>Ciencia que llega a la Huasteca</h2>
+        </header>
+
+        <div class="filters reveal" role="group" aria-label="Filtrar actividades">
+          <button type="button" class="filter is-on" data-f="all">Todo</button>
+          <button type="button" class="filter" data-f="taller">Talleres</button>
+          <button type="button" class="filter" data-f="charla">Conferencias</button>
+          <button type="button" class="filter" data-f="comp">Competencias</button>
+          <button type="button" class="filter" data-f="jurado">Jurado y asesoría</button>
+        </div>
+
+        <div class="events" id="events">
+          <article class="event reveal" data-k="jurado"><p class="ev-year">2026</p><h3>Jurado estatal · XXVIII Concurso Nacional de Prototipos DGETI</h3><p>Evaluación técnica de prototipos de software y emprendimiento de todo San Luis Potosí.</p></article>
+          <article class="event reveal" data-k="jurado"><p class="ev-year">2025</p><h3>Jurado local · XXVII Concurso Nacional de Prototipos DGETI</h3><p>CBTis No. 46, Ciudad Valles.</p></article>
+          <article class="event reveal" data-k="charla"><p class="ev-year">2025</p><h3>Ponencia magistral · 14.º aniversario de la UICSLP</h3><p>Universidad Intercultural de San Luis Potosí, Unidad Académica Ciudad Valles.</p></article>
+          <article class="event reveal" data-k="comp"><p class="ev-year">2025</p><h3>Coach del equipo “Progratléticos” · Coding Cup TecNM</h3><p>Entrenamiento en algoritmos, estructuras de datos y optimización.</p></article>
+          <article class="event reveal" data-k="taller"><p class="ev-year">2025</p><h3>Taller de robótica inclusiva · USAER 5</h3><p>Robótica para estudiantes de primaria y secundaria con necesidades educativas especiales. <a href="https://www.facebook.com/share/p/1A7TVG8WXF/" target="_blank" rel="noopener">Ver publicación</a></p></article>
+          <article class="event reveal" data-k="taller"><p class="ev-year">2025</p><h3>Mentor del Club de Robótica · CBTis No. 46</h3><p>Diseño, armado y programación de prototipos con jóvenes de bachillerato. <a href="https://www.facebook.com/share/p/1ESZVJVWJ9/" target="_blank" rel="noopener">Ver publicación</a></p></article>
+          <article class="event reveal" data-k="taller"><p class="ev-year">2025</p><h3>Taller de Python · Lic. en Informática Administrativa (UICSLP)</h3><p>Programación y automatización con contenidos adaptados a un contexto intercultural.</p></article>
+          <article class="event reveal" data-k="taller"><p class="ev-year">2024</p><h3>Introducción a Python para la inclusión digital</h3><p>Universidad Intercultural de San Luis Potosí, campus Valles.</p></article>
+          <article class="event reveal" data-k="comp"><p class="ev-year">2024</p><h3>Coach del equipo “Pythoneers” · Coding Cup TecNM</h3><p>Taller intensivo de algoritmos y lógica de programación.</p></article>
+          <article class="event reveal" data-k="jurado"><p class="ev-year">2024</p><h3>Asesor de prototipos DGETI</h3><p>“SIC: Sistema Integral de Calificaciones”, “SRME: Sistema de Registro Médico Estudiantil” y “Memorama contable, jugando y aprendiendo”.</p></article>
+          <article class="event reveal" data-k="taller"><p class="ev-year">2024</p><h3>Feria “Juega y aprende ciencia y tecnología”</h3><p>CBTis No. 46.</p></article>
+          <article class="event reveal" data-k="taller"><p class="ev-year">2024</p><h3>Instructor · Metodologías ágiles y frameworks · Cultura digital para docentes</h3><p>Cursos de 30 y 10 horas.</p></article>
+          <article class="event reveal" data-k="charla"><p class="ev-year">2022</p><h3>Conferencia · Plataforma para grandes volúmenes de datos en salud</h3><p>Instituto Tecnológico de Ciudad Valles.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= RECURSOS ================= -->
+    <section class="block block-slim">
+      <div class="wrap resources reveal">
+        <p class="kicker">Para mis estudiantes</p>
+        <div class="res-links">
+          <a href="so.html"><b>Sistemas Operativos</b><span>Problemas de práctica →</span></a>
+          <a href="missionghost/"><b>Mission Ghost</b><span>Videojuego en Phaser →</span></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CONTACTO ================= -->
+    <section id="contacto" class="block contact">
+      <div class="wrap contact-inner">
+        <div class="reveal">
+          <p class="kicker">07 — Contacto</p>
+          <h2>¿Colaboramos?</h2>
+          <p>Me interesa colaborar en cómputo distribuido, IoT, ingeniería de datos y agricultura digital, y dirigir tesis y residencias profesionales.</p>
+        </div>
+        <div class="contact-card reveal">
+          <img src="img/alfredo-avatar.jpg" alt="" width="64" height="64">
+          <div>
+            <a class="mail" href="mailto:alfredo.br@cdvalles.tecnm.mx">alfredo.br@cdvalles.tecnm.mx</a>
+            <p>Departamento de Sistemas y Computación<br>Instituto Tecnológico de Ciudad Valles<br>Ciudad Valles, San Luis Potosí, México</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot-inner">
+      <p>© <span id="y">2026</span> Dr. Alfredo Barrón Rodríguez</p>
+      <p><a href="#top">Volver arriba ↑</a></p>
     </div>
-  </section>
-
-  <section id="research">
-    <h2 class="section-title">Líneas de investigación</h2>
-    <div class="card">
-      <ul>
-        <li>🌽 Agricultura inteligente y monitoreo climático</li>
-        <li>☁️ Computación distribuida: Edge, Fog y Cloud</li>
-        <li>📊 Ciencia de datos e inteligencia artificial</li>
-        <li>🧠 Contenedores inteligentes y arquitecturas en Rust</li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="projects">
-    <h2 class="section-title">Proyectos</h2>
-    <div class="card">
-      <p><strong>Agroplataforma para el maíz nativo (SECIHTI 2025)</strong> – Plataforma georreferenciada con IoT para conservar variedades locales.</p>
-      <p><strong>Contenedores de datos en Rust</strong> – Arquitectura basada en microservicios con comunicación vía gRPC y memoria compartida.</p>
-      <p><strong>Muyal-Ilal</strong> – Plataforma de datos de salud de alto volumen (CONACYT FORDECYT).</p>
-    </div>
-  </section>
-
-  <section id="publications">
-    <h2 class="section-title">Publicaciones</h2>
-    <div class="card">
-      <ul>
-        <li>📄 <strong>Sensors (2022):</strong> <a href="https://doi.org/10.3390/s22187016" target="_blank">Efficient Delivery and Storage of IoT Data</a></li>
-        <li>📄 <strong>IEEE TCC (2020):</strong> <a href="https://doi.org/10.1109/TCC.2020.2968444" target="_blank">Improving Performance in Cloud Storage</a></li>
-        <li>🔗 <a href="https://scholar.google.com/citations?user=89hwiWsAAAAJ&hl=en" target="_blank">Ver perfil completo en Google Scholar</a></li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="teaching">
-    <h2 class="section-title">Docencia y Divulgación</h2>
-    <div class="card">
-      <p>He impartido más de 15 cursos entre licenciatura, bachillerato y educación en línea, abarcando programación, sistemas informáticos, ingeniería de software, frameworks, tesis, y tecnologías emergentes.</p>
-    </div>
-  </section>
-
-  <section id="contact">
-    <h2 class="section-title">Contacto</h2>
-    <div class="card">
-      <p>📧 <a href="mailto:alfreedobarron@gmail.com">alfreedobarron@gmail.com</a><br>
-      🔗 <a href="https://orcid.org/0000-0002-2675-6071" target="_blank">ORCID</a> | <a href="https://www.researchgate.net/profile/Alfredo-Barron" target="_blank">ResearchGate</a> | <a href="https://www.linkedin.com/in/alfredobarronr/" target="_blank">LinkedIn</a></p>
-    </div>
-  </section>
-
-
-  <section id="research">
-    <h2 class="section-title">Líneas de investigación</h2>
-    <div class="card">
-      <ul>
-        <li>🌽 Agricultura inteligente y monitoreo climático</li>
-        <li>☁️ Computación distribuida: Edge, Fog y Cloud</li>
-        <li>📊 Ciencia de datos e inteligencia artificial</li>
-        <li>🧠 Contenedores inteligentes y arquitecturas en Rust</li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="projects">
-    <h2 class="section-title">Proyectos</h2>
-    <div class="card">
-      <p><strong>Agroplataforma para el maíz nativo (SECIHTI 2025)</strong> – Plataforma georreferenciada con IoT para conservar variedades locales.</p>
-      <p><strong>Contenedores de datos en Rust</strong> – Arquitectura basada en microservicios con comunicación vía gRPC y memoria compartida.</p>
-      <p><strong>Muyal-Ilal</strong> – Plataforma de datos de salud de alto volumen (CONACYT FORDECYT).</p>
-    </div>
-  </section>
-
-  <section id="publications">
-    <h2 class="section-title">Publicaciones</h2>
-    <div class="card">
-      <ul>
-        <li>📄 <strong>Sensors (2022):</strong> <a href="https://doi.org/10.3390/s22187016" target="_blank">Efficient Delivery and Storage of IoT Data</a></li>
-        <li>📄 <strong>IEEE TCC (2020):</strong> <a href="https://doi.org/10.1109/TCC.2020.2968444" target="_blank">Improving Performance in Cloud Storage</a></li>
-        <li>🔗 <a href="https://scholar.google.com/citations?user=89hwiWsAAAAJ&hl=en" target="_blank">Ver perfil completo en Google Scholar</a></li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="teaching">
-    <h2 class="section-title">Docencia y Divulgación</h2>
-    <div class="card">
-      <p>He impartido más de 15 cursos entre licenciatura, bachillerato y educación en línea, abarcando programación, sistemas informáticos, ingeniería de software, frameworks, tesis, y tecnologías emergentes.</p>
-    </div>
-  </section>
-
-  <footer>
-    <p>&copy; 2025 Dr. Alfredo Barrón Rodríguez — Sitio en desarrollo con ❤️ y HTML/CSS.</p>
   </footer>
-</body>
 
+  <script src="js/main.js" defer></script>
+</body>
 </html>
