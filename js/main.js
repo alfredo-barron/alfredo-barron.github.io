@@ -80,12 +80,6 @@
   var reveals = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
   var counters = Array.prototype.slice.call(document.querySelectorAll('.count'));
   if ('IntersectionObserver' in window && !reduce) {
-    // escalonar elementos hermanos
-    reveals.forEach(function (el) {
-      var sibs = Array.prototype.filter.call(el.parentNode.children, function (c) { return c.classList.contains('reveal'); });
-      var i = sibs.indexOf(el);
-      if (i > 0) el.style.setProperty('--d', Math.min(i, 6) * 0.07 + 's');
-    });
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {
         if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
@@ -99,37 +93,6 @@
     counters.forEach(function (el) { co.observe(el); });
   } else {
     reveals.forEach(function (el) { el.classList.add('in'); });
-  }
-
-  /* ---------- Rotador de roles ---------- */
-  var rot = document.getElementById('rotator');
-  var words = ['sistemas distribuidos', 'cómputo Edge–Fog–Cloud', 'Internet de las Cosas', 'ingeniería de datos', 'agricultura digital'];
-  if (rot && !reduce) {
-    var wi = 0, ci = words[0].length, deleting = true, wait = 1800;
-    (function type() {
-      var w = words[wi];
-      if (deleting) {
-        ci--;
-        if (ci <= 0) { deleting = false; wi = (wi + 1) % words.length; w = words[wi]; }
-      } else {
-        ci++;
-      }
-      rot.textContent = words[wi].slice(0, Math.max(ci, 0));
-      var delay = deleting ? 35 : 70;
-      if (!deleting && ci >= words[wi].length) { deleting = true; delay = wait; }
-      setTimeout(type, delay);
-    })();
-  }
-
-  /* ---------- Retrato con inclinación ---------- */
-  var portrait = document.getElementById('portrait');
-  if (portrait && !reduce && window.matchMedia('(hover: hover)').matches) {
-    portrait.addEventListener('mousemove', function (e) {
-      var r = portrait.getBoundingClientRect();
-      var x = (e.clientX - r.left) / r.width - 0.5, yv = (e.clientY - r.top) / r.height - 0.5;
-      portrait.style.transform = 'perspective(900px) rotateY(' + (x * 8) + 'deg) rotateX(' + (-yv * 8) + 'deg)';
-    });
-    portrait.addEventListener('mouseleave', function () { portrait.style.transform = ''; });
   }
 
   /* ---------- Filtros de divulgación ---------- */
@@ -188,46 +151,6 @@
     for (var i = 0; i < fog.length - 1; i++) edges.push([fog[i], fog[i + 1]]);
   }
 
-  function spawn() {
-    if (!edges.length) return;
-    var e = edges[(Math.random() * edges.length) | 0];
-    var up = e[0].y > e[1].y;
-    packets.push({ a: up ? e[0] : e[1], b: up ? e[1] : e[0], p: 0, s: 0.006 + Math.random() * 0.008 });
-  }
-
-  var last = 0, tAcc = 0;
-  function frame(ts) {
-    if (!running) return;
-    var dt = Math.min(ts - last, 50); last = ts; tAcc += dt;
-    ctx.clearRect(0, 0, W, H);
-    nodes.forEach(function (n) {
-      n.ph += dt * 0.0008;
-      n.x = n.bx + Math.sin(n.ph) * 4; n.y = n.by + Math.cos(n.ph * 1.3) * 3;
-    });
-    ctx.lineWidth = 1;
-    edges.forEach(function (e) {
-      ctx.strokeStyle = 'rgba(160,185,220,0.16)';
-      ctx.beginPath(); ctx.moveTo(e[0].x, e[0].y); ctx.lineTo(e[1].x, e[1].y); ctx.stroke();
-    });
-    nodes.forEach(function (n) {
-      ctx.fillStyle = COLORS[n.t];
-      ctx.globalAlpha = 0.85;
-      ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, 6.283); ctx.fill();
-      ctx.globalAlpha = 0.12;
-      ctx.beginPath(); ctx.arc(n.x, n.y, n.r * 3.2, 0, 6.283); ctx.fill();
-    });
-    ctx.globalAlpha = 1;
-    if (tAcc > 140) { spawn(); tAcc = 0; }
-    for (var i = packets.length - 1; i >= 0; i--) {
-      var k = packets[i]; k.p += k.s * dt / 16;
-      if (k.p >= 1) { packets.splice(i, 1); continue; }
-      var x = k.a.x + (k.b.x - k.a.x) * k.p, yy = k.a.y + (k.b.y - k.a.y) * k.p;
-      ctx.fillStyle = COLORS[k.b.t];
-      ctx.beginPath(); ctx.arc(x, yy, 1.8, 0, 6.283); ctx.fill();
-    }
-    requestAnimationFrame(frame);
-  }
-
   function staticDraw() {
     ctx.clearRect(0, 0, W, H);
     edges.forEach(function (e) { ctx.strokeStyle = 'rgba(160,185,220,0.16)'; ctx.beginPath(); ctx.moveTo(e[0].x, e[0].y); ctx.lineTo(e[1].x, e[1].y); ctx.stroke(); });
@@ -235,20 +158,10 @@
   }
 
   build();
-  if (reduce) { staticDraw(); }
-  else {
-    requestAnimationFrame(function (t) { last = t; frame(t); });
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (en) {
-        var vis = en[0].isIntersecting;
-        if (vis && !running) { running = true; requestAnimationFrame(function (t) { last = t; frame(t); }); }
-        else if (!vis) running = false;
-      }).observe(cv);
-    }
-  }
+  staticDraw();
   var rt;
   window.addEventListener('resize', function () {
     clearTimeout(rt);
-    rt = setTimeout(function () { build(); if (reduce) staticDraw(); }, 200);
+    rt = setTimeout(function () { build(); staticDraw(); }, 200);
   });
 })();
