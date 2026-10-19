@@ -1,0 +1,1858 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Arcade de IA</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Press+Start+2P&display=swap">
+<style>
+/* Concepto: gabinete de arcade nocturno. Pantallas de juego a la izquierda, "manual del jugador" a la derecha. */
+:root{
+  --bg:#15132b;        /* noche índigo */
+  --panel:#201d40;     /* gabinete */
+  --panel2:#29255200;
+  --line:#3a3570;
+  --fg:#f3ede0;        /* papel de manual */
+  --muted:#b7b0cf;
+  --amber:#ffb238;     /* marquesina */
+  --cyan:#5fd4e2;      /* fósforo */
+  --rose:#ff6f8e;      /* enemigo */
+  --lime:#9be36b;      /* recompensa */
+  --violet:#a98bff;
+  --screen:#0c0b1c;
+  --f-pixel:"Press Start 2P","Courier New",monospace;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--f-body);font-size:16px;line-height:1.5;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 32px}
+.wrap{max-width:1240px;margin:0 auto}
+header.top{padding-block:28px 14px;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:flex-end;justify-content:space-between}
+h1{font-family:var(--f-pixel);font-size:clamp(18px,3.2vw,30px);line-height:1.35;margin:0;color:var(--amber);letter-spacing:.02em;text-wrap:balance;
+  text-shadow:0 0 18px color-mix(in srgb,var(--amber) 45%,transparent)}
+.sub{color:var(--muted);margin:6px 0 0;max-width:62ch}
+.coin{font-family:var(--f-pixel);font-size:11px;color:var(--cyan);letter-spacing:.08em;animation:blink 1.4s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+nav.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 18px}
+nav.tabs button{font:inherit;font-size:14px;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:9px 13px;cursor:pointer;display:flex;gap:8px;align-items:center;text-align:left}
+nav.tabs button .n{font-family:var(--f-pixel);font-size:10px;color:var(--amber)}
+nav.tabs button[aria-selected="true"]{border-color:var(--amber);background:color-mix(in srgb,var(--amber) 14%,var(--panel));box-shadow:0 0 0 1px var(--amber) inset}
+nav.tabs button:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+section.demo{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
+@media (max-width:900px){section.demo{grid-template-columns:minmax(0,1fr)}}
+.stage{background:var(--screen);border:1px solid var(--line);border-radius:14px;padding:10px;min-width:0;
+  box-shadow:0 0 0 6px color-mix(in srgb,var(--panel) 70%,transparent),0 18px 40px #0008}
+.stage canvas{display:block;width:100%;height:auto;border-radius:8px;image-rendering:pixelated;touch-action:none}
+.hud{display:flex;flex-wrap:wrap;gap:6px 16px;font-family:var(--f-mono);font-size:13px;color:var(--muted);padding:8px 4px 2px;font-variant-numeric:tabular-nums}
+.hud b{color:var(--fg);font-weight:600}
+.manual{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.manual h2{font-family:var(--f-pixel);font-size:13px;line-height:1.5;color:var(--cyan);margin:0;letter-spacing:.03em}
+.manual h3{font-size:13px;text-transform:uppercase;letter-spacing:.09em;color:var(--amber);margin:0 0 6px}
+.manual p{margin:0}
+.manual ol,.manual ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.ctrls{display:flex;flex-wrap:wrap;gap:8px}
+.ctrls button,.ctrls select{font:inherit;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer}
+.ctrls button.pri{background:var(--amber);color:#24170a;border-color:var(--amber);font-weight:700}
+.ctrls button[aria-pressed="true"]{border-color:var(--cyan);color:var(--cyan)}
+label.rng{display:grid;grid-template-columns:110px 1fr 46px;gap:8px;align-items:center;font-size:14px}
+label.rng input{width:100%;accent-color:var(--amber)}
+label.rng output{font-family:var(--f-mono);font-size:13px;text-align:right;color:var(--cyan)}
+.ask{border-left:3px solid var(--rose);padding:8px 10px;background:color-mix(in srgb,var(--rose) 10%,transparent);border-radius:0 8px 8px 0;font-size:15px}
+.ask b{color:var(--rose)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.states{display:flex;flex-wrap:wrap;gap:6px}
+.states span{font-family:var(--f-mono);font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.states span.on{border-color:var(--amber);color:#24170a;background:var(--amber);font-weight:700}
+canvas.mini{width:100%;height:auto;background:var(--screen);border:1px solid var(--line);border-radius:8px;display:block}
+.kbd{font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;color:var(--fg)}
+footer{color:var(--muted);font-size:13px;margin-top:26px}
+@media (prefers-reduced-motion:reduce){.coin{animation:none}}
+section.demo[hidden]{display:none!important}
+
+nav.tabs .grp{flex-basis:100%;font-family:var(--f-pixel);font-size:10px;color:var(--muted);letter-spacing:.06em;margin-top:4px}
+nav.tabs .grp:first-child{margin-top:0}
+.adiv{padding:10px 6px 4px;display:flex;flex-direction:column;gap:8px}
+.adiv .qq{font-family:var(--f-pixel);font-size:15px;line-height:1.6;color:var(--amber);margin:0}
+.adiv .msg{margin:0;color:var(--muted);font-size:15px}
+.txt{font:inherit;font-size:15px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px 12px;font-size:14px}
+.chk{display:flex;gap:6px;align-items:center}
+.chk input{accent-color:var(--amber);width:16px;height:16px}
+.txstage{display:flex;flex-direction:column;gap:6px;min-height:520px;padding:16px}
+.frase{font-size:clamp(20px,2.6vw,30px);line-height:1.5;min-height:3.2em;padding:10px 12px;background:#0006;border:1px solid var(--line);border-radius:10px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.frase .ph{color:var(--muted);font-size:16px}
+.frase .w{color:var(--fg)}
+.frase .w.ctx{color:var(--cyan);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--cyan) 50%,transparent);text-underline-offset:5px}
+.ctx{margin:6px 4px 0;color:var(--muted);font-size:14px}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bar{font:inherit;display:grid;grid-template-columns:minmax(90px,170px) 1fr 56px;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--fg);cursor:pointer;text-align:left}
+.bar:hover{border-color:var(--amber)}
+.bar .lbl{font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .track{height:14px;background:var(--screen);border-radius:7px;overflow:hidden}
+.bar .fill{display:block;height:100%;background:var(--amber);border-radius:7px}
+.bar .pct{font-family:var(--f-mono);font-size:13px;color:var(--cyan);text-align:right}
+.more{margin:2px 4px;color:var(--muted);font-size:13px}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div>
+    <h1>ARCADE DE IA</h1>
+    <p class="sub">Once juegos para ver por dentro cómo piensa, busca, imagina, aprende, crea y evoluciona una inteligencia artificial. Charla <i>De los videojuegos a la inteligencia artificial</i> · TecNM Campus Ciudad Valles.</p>
+  </div>
+  <div class="coin">INSERT COIN · PRESIONA JUGAR</div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Juegos">
+  <span class="grp">Reglas y búsqueda</span>
+  <button role="tab" id="t-fantasma" aria-selected="true" data-tab="fantasma"><span class="n">1</span>La plaga que te persigue</button>
+  <button role="tab" id="t-parvada" aria-selected="false" data-tab="parvada"><span class="n">2</span>Parvada</button>
+  <button role="tab" id="t-gato" aria-selected="false" data-tab="gato"><span class="n">3</span>Gato imbatible</button>
+  <button role="tab" id="t-conecta" aria-selected="false" data-tab="conecta"><span class="n">4</span>Conecta 4 Monte Carlo</button>
+  <button role="tab" id="t-mundo" aria-selected="false" data-tab="mundo"><span class="n">5</span>Mundos procedurales</button>
+  <span class="grp">Aprender</span>
+  <button role="tab" id="t-arbol" aria-selected="false" data-tab="arbol"><span class="n">6</span>El adivinador</button>
+  <button role="tab" id="t-refuerzo" aria-selected="false" data-tab="refuerzo"><span class="n">7</span>Aprender jugando</button>
+  <button role="tab" id="t-flappy" aria-selected="false" data-tab="flappy"><span class="n">8</span>Pájaros que evolucionan</button>
+  <button role="tab" id="t-red" aria-selected="false" data-tab="red"><span class="n">9</span>Entrena una red neuronal</button>
+  <button role="tab" id="t-dibujo" aria-selected="false" data-tab="dibujo"><span class="n">10</span>Dibuja y la IA aprende</button>
+  <button role="tab" id="t-texto" aria-selected="false" data-tab="texto"><span class="n">11</span>Predice la palabra</button>
+</nav>
+
+<!-- 1 · FANTASMA -->
+<section class="demo" id="fantasma" role="tabpanel" aria-labelledby="t-fantasma">
+  <div class="stage">
+    <canvas id="fa-cv" width="840" height="600" aria-label="Laberinto con un elote y una plaga que lo persigue"></canvas>
+    <div class="hud"><span>Estado: <b id="fa-estado">Patrullar</b></span><span>Casillas exploradas: <b id="fa-exp">0</b></span><span>Largo del camino: <b id="fa-len">0</b></span><span>Atrapado: <b id="fa-caught">0</b> veces</span></div>
+  </div>
+  <aside class="manual">
+    <h2>NPC · BÚSQUEDA A*</h2>
+    <p>Eres el <b>elote</b>. Muévete con las flechas o <span class="kbd">W A S D</span>, o toca una casilla. La <b>plaga</b> (un gusano cogollero) es un <b>NPC</b>: decide con una <b>máquina de estados</b> y busca el camino con un algoritmo.</p>
+    <div><h3>Máquina de estados</h3>
+      <div class="states" id="fa-states"><span data-s="Patrullar">Patrullar</span><span data-s="Perseguir">Perseguir</span><span data-s="Huir">Huir (asustado)</span></div>
+      <p style="font-size:14px;color:var(--muted);margin-top:6px">Si te ve a 8 casillas o menos, te persigue. Si tocas una <b>catarina</b> (su depredador natural), huye 8 segundos.</p>
+    </div>
+    <div class="ctrls">
+      <label for="fa-alg" style="font-size:14px;align-self:center">Algoritmo</label>
+      <select id="fa-alg"><option value="astar">A* (recorrido + distancia)</option><option value="bfs">Anchura (BFS): explora todo</option><option value="greedy">Voraz: solo distancia</option></select>
+    </div>
+    <div class="ctrls">
+      <button class="pri" id="fa-play">Pausa</button><button id="fa-anim">Ver la búsqueda paso a paso</button><button id="fa-maze">Nuevo laberinto</button>
+    </div>
+    <label class="rng">Velocidad <input type="range" id="fa-speed" min="1" max="10" value="4"><output id="fa-speed-o">4</output></label>
+    <div class="legend"><span><i style="background:var(--cyan);opacity:.55"></i>exploradas</span><span><i style="background:var(--amber)"></i>camino elegido</span><span><i style="background:#3a3570"></i>muros</span></div>
+    <div class="ask"><b>Pregunta:</b> cambia entre A*, Anchura y Voraz. ¿Cuál explora menos casillas? ¿Cuál a veces elige un camino más largo?</div>
+  </aside>
+</section>
+
+<!-- 2 · PARVADA -->
+<section class="demo" id="parvada" role="tabpanel" aria-labelledby="t-parvada" hidden>
+  <div class="stage">
+    <canvas id="bo-cv" width="840" height="560" aria-label="Parvada de pájaros que vuelan en grupo"></canvas>
+    <div class="hud"><span>Pájaros: <b id="bo-n">0</b></span><span>Vecinos que ve el pájaro dorado: <b id="bo-v">0</b></span><span>Mueve el cursor o el dedo: eres el halcón</span></div>
+  </div>
+  <aside class="manual">
+    <h2>COMPORTAMIENTO DE GRUPO</h2>
+    <p>Nadie dirige la parvada. Cada pájaro (un <b>NPC</b>) mira solo a sus vecinos y sigue <b>tres reglas</b>. Así se animan multitudes, cardúmenes y ejércitos en los videojuegos.</p>
+    <ul>
+      <li><b style="color:var(--rose)">Separación</b>: no chocar con los de al lado.</li>
+      <li><b style="color:var(--lime)">Alineación</b>: volar hacia donde van los demás.</li>
+      <li><b style="color:var(--violet)">Cohesión</b>: no quedarse solo, ir al centro del grupo.</li>
+    </ul>
+    <label class="rng">Separación <input type="range" id="bo-sep" min="0" max="40" value="15"><output id="bo-sep-o">1.5</output></label>
+    <label class="rng">Alineación <input type="range" id="bo-ali" min="0" max="40" value="10"><output id="bo-ali-o">1.0</output></label>
+    <label class="rng">Cohesión <input type="range" id="bo-coh" min="0" max="40" value="10"><output id="bo-coh-o">1.0</output></label>
+    <label class="rng">Visión <input type="range" id="bo-vis" min="15" max="150" value="60"><output id="bo-vis-o">60 px</output></label>
+    <div class="ctrls">
+      <button class="pri" id="bo-play">Pausa</button><button id="bo-reset">Soltar de nuevo</button>
+      <button id="bo-pred" aria-pressed="true">Halcón</button><button id="bo-one" aria-pressed="true">Ver un pájaro por dentro</button>
+    </div>
+    <div class="legend"><span>Flechas del pájaro dorado:</span><span><i style="background:var(--rose)"></i>separación</span><span><i style="background:var(--lime)"></i>alineación</span><span><i style="background:var(--violet)"></i>cohesión</span></div>
+    <div class="ask"><b>Pregunta:</b> pon la cohesión en 0. ¿Qué pasa con el grupo? ¿Y si la separación es 0? Tres reglas simples producen un comportamiento complejo.</div>
+  </aside>
+</section>
+
+<!-- 3 · GATO -->
+<section class="demo" id="gato" role="tabpanel" aria-labelledby="t-gato" hidden>
+  <div class="stage">
+    <canvas id="ga-cv" width="840" height="600" aria-label="Tablero de gato"></canvas>
+    <div class="hud"><span>Jugadas que imaginó la IA: <b id="ga-nodes">0</b></span><span>Marcador · Tú <b id="ga-h">0</b> · IA <b id="ga-a">0</b> · Empates <b id="ga-d">0</b></span></div>
+  </div>
+  <aside class="manual">
+    <h2>MINIMAX</h2>
+    <p>Tú eres <b style="color:var(--cyan)">X</b>. Antes de tirar, la IA imagina <b>todas</b> las partidas posibles hasta el final y les pone puntos: <b style="color:var(--lime)">+1</b> si gana, <b>0</b> si empata, <b style="color:var(--rose)">−1</b> si pierde.</p>
+    <ol>
+      <li>Supone que tú juegas lo mejor posible (minimizas).</li>
+      <li>Ella busca lo mejor para sí (maximiza).</li>
+      <li>Elige la casilla con más puntos.</li>
+    </ol>
+    <div class="ctrls">
+      <button class="pri" id="ga-new">Nueva partida</button>
+      <button id="ga-first" aria-pressed="false">Que empiece la IA</button>
+      <button id="ga-ab" aria-pressed="false">Poda alfa-beta</button>
+      <button id="ga-show" aria-pressed="true">Mostrar lo que piensa</button>
+    </div>
+    <div class="legend"><span><i style="background:var(--lime)"></i>+1 la IA gana</span><span><i style="background:var(--amber)"></i>0 empate</span><span><i style="background:var(--rose)"></i>−1 la IA pierde</span></div>
+    <div class="ask"><b>Reto:</b> intenta ganarle. Después activa la <b>poda alfa-beta</b>: ¿cuántas jugadas deja de imaginar sin cambiar su decisión?</div>
+  </aside>
+</section>
+
+<!-- 4 · CONECTA 4 -->
+<section class="demo" id="conecta" role="tabpanel" aria-labelledby="t-conecta" hidden>
+  <div class="stage">
+    <canvas id="c4-cv" width="840" height="600" aria-label="Tablero de Conecta 4"></canvas>
+    <div class="hud"><span>Partidas imaginadas: <b id="c4-sims">0</b></span><span>Marcador · Tú <b id="c4-h">0</b> · IA <b id="c4-a">0</b> · Empates <b id="c4-d">0</b></span></div>
+  </div>
+  <aside class="manual">
+    <h2>BÚSQUEDA MONTE CARLO</h2>
+    <p>En Conecta 4 hay demasiadas partidas para imaginarlas todas (como hacía el gato). La IA usa un truco: <b>juega cientos de partidas al azar</b> desde cada columna y elige la que gana más veces.</p>
+    <ol>
+      <li>Toca una columna para soltar tu ficha <b style="color:var(--cyan)">azul</b>.</li>
+      <li>La IA (<b style="color:var(--amber)">ámbar</b>) simula partidas y llena las barras.</li>
+      <li>Prueba más las columnas que van ganando: <b>explorar y aprovechar</b>.</li>
+    </ol>
+    <label class="rng">Simulaciones <input type="range" id="c4-budget" min="20" max="4000" step="20" value="800"><output id="c4-budget-o">800</output></label>
+    <div class="ctrls">
+      <button class="pri" id="c4-new">Nueva partida</button><button id="c4-first" aria-pressed="false">Que empiece la IA</button><button id="c4-show" aria-pressed="true">Mostrar lo que piensa</button>
+    </div>
+    <div class="ask"><b>Reto:</b> gánale con 20 simulaciones. Luego súbelas a 4 000. ¿Juega mejor? Así funciona, en grande, la búsqueda que usó AlphaGo para el Go.</div>
+  </aside>
+</section>
+
+<!-- 5 · MUNDOS -->
+<section class="demo" id="mundo" role="tabpanel" aria-labelledby="t-mundo" hidden>
+  <div class="stage">
+    <canvas id="mu-cv" width="840" height="600" aria-label="Mapa generado con ruido"></canvas>
+    <div class="hud"><span>Agua: <b id="mu-agua">—</b></span><span>Aldeas colocadas: <b id="mu-ald">0</b></span></div>
+    <canvas class="mini" id="mu-oct" width="820" height="150" aria-label="Capas de ruido que se suman"></canvas>
+  </div>
+  <aside class="manual">
+    <h2>GENERACIÓN PROCEDURAL</h2>
+    <p>Nadie dibujó este mapa. Una <b>receta</b> lo crea: varias capas de <b>ruido</b> (números al azar suavizados) se suman. La altura decide si hay agua, playa, pasto, bosque o montaña.</p>
+    <ul>
+      <li>La misma <b>semilla</b> siempre produce el mismo mundo: así se comparten mundos en los juegos de bloques.</li>
+      <li>Las <b>aldeas</b> siguen reglas: pasto plano, cerca del agua, lejos de otra aldea.</li>
+    </ul>
+    <div class="ctrls">
+      <label for="mu-seed" style="font-size:14px;align-self:center">Semilla</label>
+      <input id="mu-seed" type="number" value="46" style="width:110px;font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 8px">
+      <button class="pri" id="mu-new">Mundo nuevo</button><button id="mu-ald-t" aria-pressed="true">Aldeas</button>
+    </div>
+    <label class="rng">Capas (octavas) <input type="range" id="mu-octs" min="1" max="6" value="4"><output id="mu-octs-o">4</output></label>
+    <label class="rng">Tamaño <input type="range" id="mu-esc" min="18" max="180" value="60"><output id="mu-esc-o">60 px</output></label>
+    <label class="rng">Nivel del mar <input type="range" id="mu-mar" min="20" max="70" value="42"><output id="mu-mar-o">0.42</output></label>
+    <div class="ask"><b>Pregunta:</b> deja 1 sola capa. ¿Cómo se ve el mundo? Agrega capas: cada una añade detalle más fino, como montañas con piedras.</div>
+  </aside>
+</section>
+
+<!-- 6 · ADIVINADOR -->
+<section class="demo" id="arbol" role="tabpanel" aria-labelledby="t-arbol" hidden>
+  <div class="stage">
+    <canvas id="ar-cv" width="840" height="520" aria-label="Árbol de decisión aprendido"></canvas>
+    <div class="adiv">
+      <p class="qq" id="ar-q">¿Vuela?</p>
+      <div class="ctrls" id="ar-btns"><button class="pri" id="ar-si">Sí</button><button id="ar-no">No</button></div>
+      <p class="msg" id="ar-msg"></p>
+      <div id="ar-form" hidden>
+        <div class="ctrls"><input id="ar-name" placeholder="nombre del animal" aria-label="Nombre del animal" class="txt"></div>
+        <div class="checks" id="ar-checks"></div>
+        <div id="ar-np" hidden><input id="ar-newq" placeholder="¿Tiene cola larga?" aria-label="Pregunta nueva" class="txt" style="width:100%"></div>
+        <div class="ctrls"><button class="pri" id="ar-add">Aprender este animal</button></div>
+      </div>
+    </div>
+  </div>
+  <aside class="manual">
+    <h2>ÁRBOL DE DECISIÓN</h2>
+    <p>Piensa en un animal de la Huasteca. La IA pregunta y adivina. El árbol <b>no lo escribió nadie</b>: lo calculó a partir de una tabla de 15 animales.</p>
+    <ol>
+      <li>Elige la pregunta que <b>mejor divide</b> a los animales (ganancia de información).</li>
+      <li>Repite con cada grupo hasta que quede uno.</li>
+      <li>Si se equivoca, enséñale tu animal y el árbol <b>se vuelve a calcular</b>.</li>
+    </ol>
+    <canvas class="mini" id="ar-gain" width="420" height="170" aria-label="Ganancia de información de cada pregunta"></canvas>
+    <div class="ctrls"><button id="ar-restart">Jugar otra vez</button><button id="ar-reset">Olvidar lo aprendido</button></div>
+    <div class="ask"><b>Pregunta:</b> ¿por qué la primera pregunta casi nunca es “¿Es un jaguar?”? Las mejores preguntas parten al grupo a la mitad.</div>
+  </aside>
+</section>
+
+<!-- 7 · REFUERZO -->
+<section class="demo" id="refuerzo" role="tabpanel" aria-labelledby="t-refuerzo" hidden>
+  <div class="stage">
+    <canvas id="rl-cv" width="840" height="560" aria-label="Mundo de cuadrícula del agente"></canvas>
+    <div class="hud"><span>Episodio: <b id="rl-ep">0</b></span><span>Pasos: <b id="rl-steps">0</b></span><span>Puntos del episodio: <b id="rl-ret">0</b></span><span>Llegó a la mazorca: <b id="rl-wins">0</b></span></div>
+    <canvas class="mini" id="rl-chart" width="820" height="140" aria-label="Puntos por episodio"></canvas>
+  </div>
+  <aside class="manual">
+    <h2>Q-LEARNING</h2>
+    <p>El robot no conoce el mapa. Prueba, recibe puntos y anota en una <b>tabla Q</b> qué tan buena es cada acción en cada casilla. Los triángulos de colores son esa tabla.</p>
+    <ul>
+      <li><b style="color:var(--lime)">+10</b> llegar a la mazorca · <b style="color:var(--rose)">−10</b> caer al hoyo · <b>−0.1</b> cada paso</li>
+      <li><b>Explorar</b> (ε): a veces prueba al azar para descubrir.</li>
+      <li><b>Aprender</b> (α) y <b>pensar a futuro</b> (γ).</li>
+    </ul>
+    <div class="ctrls">
+      <button class="pri" id="rl-play">Entrenar</button><button id="rl-step">Un paso</button><button id="rl-reset">Olvidar todo</button><button id="rl-greedy" aria-pressed="false">Solo lo aprendido</button>
+    </div>
+    <label class="rng">Explorar ε <input type="range" id="rl-eps" min="0" max="50" value="20"><output id="rl-eps-o">0.20</output></label>
+    <label class="rng">Aprender α <input type="range" id="rl-alpha" min="1" max="100" value="50"><output id="rl-alpha-o">0.50</output></label>
+    <label class="rng">Futuro γ <input type="range" id="rl-gamma" min="0" max="99" value="90"><output id="rl-gamma-o">0.90</output></label>
+    <label class="rng">Velocidad <input type="range" id="rl-speed" min="1" max="2000" value="20"><output id="rl-speed-o">20</output></label>
+    <div class="legend"><span><i style="background:var(--lime)"></i>acción buena</span><span><i style="background:var(--rose)"></i>acción mala</span><span>Toca una casilla para poner o quitar un hoyo.</span></div>
+    <div class="ask"><b>Pregunta:</b> pon ε en 0 desde el inicio. ¿Por qué el robot se queda atorado? Así aprendes tú un nivel difícil: probando cosas nuevas.</div>
+  </aside>
+</section>
+
+<!-- 8 · FLAPPY -->
+<section class="demo" id="flappy" role="tabpanel" aria-labelledby="t-flappy" hidden>
+  <div class="stage">
+    <canvas id="fl-cv" width="840" height="560" aria-label="Pájaros esquivando tubos"></canvas>
+    <div class="hud"><span>Generación: <b id="fl-gen">1</b></span><span>Vivos: <b id="fl-alive">0</b>/<span id="fl-pop">60</span></span><span>Tubos de este intento: <b id="fl-score">0</b></span><span>Récord: <b id="fl-best">0</b></span></div>
+    <canvas class="mini" id="fl-chart" width="820" height="140" aria-label="Récord por generación"></canvas>
+  </div>
+  <aside class="manual">
+    <h2>NEUROEVOLUCIÓN</h2>
+    <p>Cada pájaro tiene un <b>cerebro</b>: una red neuronal pequeña con pesos al azar. Nadie le enseña a volar.</p>
+    <ol>
+      <li><b>Prueba</b>: los 60 pájaros juegan a la vez.</li>
+      <li><b>Selección</b>: los que llegan más lejos son padres.</li>
+      <li><b>Cruza y mutación</b>: sus hijos mezclan pesos con pequeños cambios.</li>
+      <li>Repite. Generación tras generación, vuelan mejor.</li>
+    </ol>
+    <div><h3>Cerebro del mejor pájaro vivo</h3><canvas class="mini" id="fl-net" width="440" height="300" aria-label="Red neuronal del mejor pájaro"></canvas>
+      <p style="font-size:13px;color:var(--muted);margin-top:4px">Entradas: altura, velocidad, distancia al tubo, altura del hueco. Si la salida pasa de 0.5, aletea. Líneas <span style="color:var(--lime)">verdes</span> = peso positivo, <span style="color:var(--rose)">rosas</span> = negativo.</p></div>
+    <div class="ctrls">
+      <button class="pri" id="fl-play">Pausa</button><button id="fl-reset">Empezar de cero</button><button id="fl-human" aria-pressed="false">Juega tú (espacio)</button>
+    </div>
+    <label class="rng">Velocidad <input type="range" id="fl-speed" min="1" max="30" value="1"><output id="fl-speed-o">×1</output></label>
+    <label class="rng">Mutación <input type="range" id="fl-mut" min="0" max="50" value="10"><output id="fl-mut-o">10 %</output></label>
+    <div class="ask"><b>Pregunta:</b> ¿qué pasa si la mutación es 0 %? ¿Y si es 50 %? La evolución necesita variedad, pero no demasiada.</div>
+  </aside>
+</section>
+
+<!-- 9 · RED NEURONAL -->
+<section class="demo" id="red" role="tabpanel" aria-labelledby="t-red" hidden>
+  <div class="stage">
+    <canvas id="nn-cv" width="600" height="600" aria-label="Plano con puntos de dos equipos y la frontera que aprende la red"></canvas>
+    <div class="hud"><span>Época: <b id="nn-ep">0</b></span><span>Error: <b id="nn-loss">—</b></span><span>Aciertos: <b id="nn-acc">—</b></span></div>
+    <canvas class="mini" id="nn-chart" width="820" height="120" aria-label="Error durante el entrenamiento"></canvas>
+  </div>
+  <aside class="manual">
+    <h2>RED NEURONAL</h2>
+    <p>Dos equipos de puntos: <b style="color:var(--cyan)">azul</b> y <b style="color:var(--amber)">ámbar</b>. La red aprende a separarlos. El color de fondo es lo que <b>ella cree</b> en cada lugar.</p>
+    <div class="ctrls">
+      <select id="nn-data" aria-label="Datos"><option value="lineal">Datos: separables con una recta</option><option value="circulo">Datos: círculo</option><option value="xor">Datos: XOR (cuadrantes)</option><option value="espiral">Datos: espiral</option></select>
+    </div>
+    <label class="rng">Capas ocultas <input type="range" id="nn-layers" min="0" max="3" value="1"><output id="nn-layers-o">1</output></label>
+    <label class="rng">Neuronas/capa <input type="range" id="nn-neur" min="1" max="8" value="4"><output id="nn-neur-o">4</output></label>
+    <label class="rng">Aprendizaje <input type="range" id="nn-lr" min="1" max="100" value="30"><output id="nn-lr-o">0.30</output></label>
+    <div class="ctrls">
+      <button class="pri" id="nn-play">Entrenar</button><button id="nn-reset">Pesos al azar</button><button id="nn-clear">Borrar puntos</button>
+      <button id="nn-team" aria-pressed="false">Agregar: azul</button>
+    </div>
+    <div><h3>La red por dentro</h3><canvas class="mini" id="nn-net" width="420" height="340" aria-label="Diagrama de la red"></canvas></div>
+    <div class="ask"><b>Reto:</b> con <b>0 capas ocultas</b> (una sola neurona) prueba los datos XOR. ¿Por qué no puede? Sube a 1 capa con 4 neuronas y vuelve a entrenar.</div>
+  </aside>
+</section>
+
+<!-- 10 · DIBUJO -->
+<section class="demo" id="dibujo" role="tabpanel" aria-labelledby="t-dibujo" hidden>
+  <div class="stage">
+    <canvas id="kn-cv" width="840" height="580" aria-label="Lienzo para dibujar y lo que ve la IA"></canvas>
+    <div class="hud"><span>Ejemplos que conoce: <b id="kn-n">0</b></span><span>Enseñados por ti: <b id="kn-prop">0</b></span></div>
+  </div>
+  <aside class="manual">
+    <h2>APRENDER CON EJEMPLOS (K VECINOS)</h2>
+    <p>La IA convierte tu dibujo en <b>256 números</b>. Para adivinar, busca los dibujos que ya conoce más <b>parecidos</b> (los más cercanos) y deja que voten.</p>
+    <ol>
+      <li>Dibuja con el dedo o el ratón y toca <b>¿Qué es?</b></li>
+      <li>Si falla, elige la respuesta correcta y toca <b>Enseñar</b>.</li>
+      <li>Con más ejemplos, adivina mejor: así aprenden las IA que reconocen imágenes.</li>
+    </ol>
+    <div class="ctrls">
+      <button class="pri" id="kn-pred">¿Qué es?</button><button id="kn-clear">Borrar</button>
+    </div>
+    <div class="ctrls">
+      <select id="kn-class" aria-label="Clase"><option value="0">Es un círculo</option><option value="1">Es una cruz</option><option value="2">Es una línea</option></select>
+      <button id="kn-teach">Enseñar este dibujo</button><button id="kn-reset">Olvidar ejemplos</button>
+    </div>
+    <label class="rng">Vecinos (k) <input type="range" id="kn-k" min="1" max="5" step="2" value="3"><output id="kn-k-o">3</output></label>
+    <div class="ask"><b>Reto:</b> dibuja una cruz torcida. ¿La reconoce? Enséñale tres cruces torcidas y vuelve a probar. Con k = 1 basta un ejemplo raro para engañarla.</div>
+  </aside>
+</section>
+
+<!-- 11 · TEXTO -->
+<section class="demo" id="texto" role="tabpanel" aria-labelledby="t-texto" hidden>
+  <div class="stage txstage">
+    <div class="frase" id="tx-frase"></div>
+    <div class="ctrls" style="padding:6px 4px"><button class="pri" id="tx-gen">Que escriba la IA</button><button id="tx-one">Una palabra</button><button id="tx-clear">Borrar frase</button></div>
+    <p class="ctx" id="tx-ctx"></p>
+    <div class="bars" id="tx-bars"></div>
+    <div class="hud"><span id="tx-stats"></span></div>
+  </div>
+  <aside class="manual">
+    <h2>MODELO DE LENGUAJE (MINI)</h2>
+    <p>La IA leyó unas 40 frases sobre la Huasteca, el maíz y los juegos, y contó <b>qué palabra viene después de cuál</b>. Para escribir, elige la siguiente palabra según esas probabilidades.</p>
+    <ul>
+      <li>Toca una barra para elegir tú la palabra.</li>
+      <li>Los chatbots hacen lo mismo con <b>muchísimo más texto</b> y una red neuronal enorme en lugar de un conteo.</li>
+    </ul>
+    <div class="ctrls">
+      <select id="tx-ord" aria-label="Memoria"><option value="1">Recuerda 1 palabra</option><option value="2" selected>Recuerda 2 palabras</option></select>
+    </div>
+    <label class="rng">Creatividad <input type="range" id="tx-temp" min="1" max="30" value="10"><output id="tx-temp-o">1.0</output></label>
+    <div><h3>Enséñale tu texto</h3>
+      <textarea id="tx-own" rows="4" class="txt" style="width:100%" placeholder="Pega aquí un texto (en español) y toca Entrenar"></textarea>
+      <div class="ctrls" style="margin-top:6px"><button id="tx-train">Entrenar</button><button id="tx-base">Volver al texto original</button></div></div>
+    <div class="ask"><b>Pregunta:</b> pon la creatividad en 0.1 y luego en 3. ¿Cuándo escribe frases que ya leyó y cuándo inventa cosas sin sentido? Por eso un chatbot puede “inventar” datos.</div>
+  </aside>
+</section>
+
+<footer>Todo corre en tu navegador, sin internet ni librerías: puedes abrir el código y modificarlo.</footer>
+</div>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const C = {
+  bg: "#15132b", screen: "#0c0b1c", panel: "#201d40", line: "#3a3570", fg: "#f3ede0", muted: "#b7b0cf",
+  amber: "#ffb238", cyan: "#5fd4e2", rose: "#ff6f8e", lime: "#9be36b", violet: "#a98bff"
+};
+const rnd = (a, b) => a + Math.random() * (b - a);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+function rgba(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+function mix(h1, h2, t) {
+  const a = parseInt(h1.slice(1), 16), b = parseInt(h2.slice(1), 16);
+  const r = Math.round((a >> 16) + ((b >> 16) - (a >> 16)) * t), g = Math.round(((a >> 8) & 255) + (((b >> 8) & 255) - ((a >> 8) & 255)) * t),
+    bl = Math.round((a & 255) + ((b & 255) - (a & 255)) * t);
+  return `rgb(${r},${g},${bl})`;
+}
+function bindRange(id, fmt, cb) {
+  const el = $(id), out = $(id + "-o");
+  const f = () => { const v = +el.value; if (out) out.textContent = fmt ? fmt(v) : v; if (cb) cb(v); };
+  el.addEventListener("input", f); f(); return el;
+}
+function setPressed(btn, on) { btn.setAttribute("aria-pressed", on ? "true" : "false"); }
+// Pos. del puntero en coordenadas del canvas
+function canvasPos(cv, ev) {
+  const r = cv.getBoundingClientRect();
+  return { x: (ev.clientX - r.left) * cv.width / r.width, y: (ev.clientY - r.top) * cv.height / r.height };
+}
+function lineChart(cv, series, opts = {}) {
+  const g = cv.getContext("2d"), W = cv.width, H = cv.height, p = 30;
+  g.fillStyle = C.screen; g.fillRect(0, 0, W, H);
+  g.font = "13px JetBrains Mono, monospace"; g.fillStyle = C.muted;
+  g.fillText(opts.title || "", 10, 18);
+  if (!series.length) { g.fillText("Todavía no hay datos: presiona el botón amarillo.", 10, H / 2 + 6); return; }
+  let lo = opts.min ?? Math.min(...series), hi = opts.max ?? Math.max(...series);
+  if (hi - lo < 1e-9) { hi = lo + 1; }
+  const x = (i) => p + (W - p - 10) * (series.length === 1 ? 0 : i / (series.length - 1));
+  const y = (v) => H - 14 - (H - 40) * (v - lo) / (hi - lo);
+  g.strokeStyle = C.line; g.lineWidth = 1; g.beginPath(); g.moveTo(p, y(lo)); g.lineTo(W - 10, y(lo)); g.stroke();
+  g.fillStyle = C.muted; g.textAlign = "right"; g.fillText(fmtN(hi), p - 4, y(hi) + 4); g.fillText(fmtN(lo), p - 4, y(lo) + 4); g.textAlign = "left";
+  g.beginPath(); series.forEach((v, i) => i ? g.lineTo(x(i), y(v)) : g.moveTo(x(i), y(v)));
+  g.lineTo(x(series.length - 1), y(lo)); g.lineTo(x(0), y(lo)); g.closePath(); g.fillStyle = rgba(opts.color || C.amber, .15); g.fill();
+  g.beginPath(); series.forEach((v, i) => i ? g.lineTo(x(i), y(v)) : g.moveTo(x(i), y(v)));
+  g.strokeStyle = opts.color || C.amber; g.lineWidth = 2; g.stroke();
+  const L = series.length - 1; g.fillStyle = opts.color || C.amber; g.beginPath(); g.arc(x(L), y(series[L]), 4, 0, 7); g.fill();
+}
+function fmtN(v) { return Math.abs(v) >= 100 ? Math.round(v) + "" : (Math.round(v * 10) / 10) + ""; }
+
+// Pestañas y bucle principal: solo corre el juego visible
+const DEMOS = {};
+let ACTIVE = "fantasma";
+function showTab(name) {
+  if (!DEMOS[name]) name = "fantasma";
+  ACTIVE = name;
+  document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name ? "true" : "false"));
+  document.querySelectorAll("section.demo").forEach(s => s.hidden = s.id !== name);
+  if (DEMOS[name].show) DEMOS[name].show();
+  try { history.replaceState(null, "", "#" + name); } catch (e) { }
+}
+let lastT = performance.now();
+function loop(t) {
+  const dt = Math.min(0.05, (t - lastT) / 1000); lastT = t;
+  const d = DEMOS[ACTIVE]; if (d && d.tick) d.tick(dt);
+  requestAnimationFrame(loop);
+}
+function startArcade() {
+  document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+  const h = (location.hash || "").slice(1);
+  showTab(DEMOS[h] ? h : "fantasma");
+  requestAnimationFrame(loop);
+}
+
+// ===================== 1 · EL FANTASMA (máquina de estados + búsqueda) =====================
+(function () {
+  const COLS = 21, ROWS = 15, S = 40;
+  const cv = $("fa-cv"), g = cv.getContext("2d");
+  let grid, pac, ghost, pacDir = null, nextDir = null, pacPath = [], pellets, pelletTimer = 0;
+  let state = "Patrullar", frightT = 0, caught = 0, patrolIdx = 0;
+  let search = { explored: [], path: [], gh: {} }, playing = true, animT = -1;
+  let tPac = 0, tGhost = 0, speed = 4, alg = "astar", t = 0, msg = "", msgT = 0;
+  const PATROL = [[1, 1], [COLS - 2, 1], [COLS - 2, ROWS - 2], [1, ROWS - 2]];
+  const DIRS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0], W: [0, -1], S: [0, 1], A: [-1, 0], D: [1, 0] };
+
+  function makeMaze() {
+    grid = Array.from({ length: ROWS }, () => Array(COLS).fill(1));
+    const st = [[1, 1]]; grid[1][1] = 0;
+    while (st.length) {
+      const [x, y] = st[st.length - 1];
+      const nb = [[2, 0], [-2, 0], [0, 2], [0, -2]].map(([dx, dy]) => [x + dx, y + dy, x + dx / 2, y + dy / 2])
+        .filter(([nx, ny]) => nx > 0 && ny > 0 && nx < COLS - 1 && ny < ROWS - 1 && grid[ny][nx] === 1);
+      if (!nb.length) { st.pop(); continue; }
+      const [nx, ny, mx, my] = nb[Math.floor(Math.random() * nb.length)];
+      grid[my][mx] = 0; grid[ny][nx] = 0; st.push([nx, ny]);
+    }
+    // Abrir muros extra para que haya varios caminos (así se notan las diferencias entre algoritmos)
+    for (let k = 0; k < 55; k++) {
+      const x = 1 + Math.floor(Math.random() * (COLS - 2)), y = 1 + Math.floor(Math.random() * (ROWS - 2));
+      if (grid[y][x] === 1 && ((grid[y][x - 1] === 0 && grid[y][x + 1] === 0) || (grid[y - 1][x] === 0 && grid[y + 1][x] === 0))) grid[y][x] = 0;
+    }
+    pac = { x: 1, y: 1, px: 1, py: 1 }; ghost = { x: COLS - 2, y: ROWS - 2, px: COLS - 2, py: ROWS - 2 };
+    pellets = [[COLS - 2, 1], [1, ROWS - 2]].map(([x, y]) => ({ x, y, on: true }));
+    pacDir = null; nextDir = null; pacPath = []; frightT = 0; patrolIdx = 0; state = "Patrullar";
+    search = { explored: [], path: [], gh: {} };
+  }
+  const free = (x, y) => x >= 0 && y >= 0 && x < COLS && y < ROWS && grid[y][x] === 0;
+  const key = (x, y) => y * COLS + x;
+  const nbrs = (x, y) => [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => [x + dx, y + dy]).filter(([a, b]) => free(a, b));
+
+  // Búsqueda en la cuadrícula: devuelve casillas exploradas (en orden), el camino y g/h de cada casilla
+  function find(sx, sy, tx, ty, mode) {
+    const h = (x, y) => Math.abs(x - tx) + Math.abs(y - ty);
+    const open = [{ x: sx, y: sy, g: 0, f: mode === "bfs" ? 0 : h(sx, sy), n: 0 }];
+    const came = new Map(), gBest = new Map([[key(sx, sy), 0]]), closed = new Set();
+    const explored = [], gh = {}; let n = 1;
+    while (open.length) {
+      let bi = 0;
+      for (let i = 1; i < open.length; i++) {
+        const a = open[i], b = open[bi];
+        if (mode === "bfs" ? a.n < b.n : (a.f < b.f || (a.f === b.f && h(a.x, a.y) < h(b.x, b.y)))) bi = i;
+      }
+      const cur = open.splice(bi, 1)[0], ck = key(cur.x, cur.y);
+      if (closed.has(ck)) continue;
+      closed.add(ck); explored.push([cur.x, cur.y]); gh[ck] = [cur.g, h(cur.x, cur.y)];
+      if (cur.x === tx && cur.y === ty) break;
+      for (const [nx, ny] of nbrs(cur.x, cur.y)) {
+        const nk = key(nx, ny), ng = cur.g + 1;
+        if (closed.has(nk)) continue;
+        if (mode === "astar" && gBest.has(nk) && gBest.get(nk) <= ng) continue;
+        if (mode !== "astar" && came.has(nk)) continue;
+        gBest.set(nk, ng); came.set(nk, ck);
+        const f = mode === "astar" ? ng + h(nx, ny) : mode === "greedy" ? h(nx, ny) : 0;
+        open.push({ x: nx, y: ny, g: ng, f, n: n++ });
+      }
+    }
+    const path = []; let k = key(tx, ty);
+    if (closed.has(k)) { while (k !== key(sx, sy)) { path.push([k % COLS, Math.floor(k / COLS)]); k = came.get(k); } path.reverse(); }
+    return { explored, path, gh };
+  }
+  function distMap(sx, sy) {
+    const d = new Map([[key(sx, sy), 0]]), q = [[sx, sy]];
+    while (q.length) { const [x, y] = q.shift(); for (const [a, b] of nbrs(x, y)) { const k = key(a, b); if (!d.has(k)) { d.set(k, d.get(key(x, y)) + 1); q.push([a, b]); } } }
+    return d;
+  }
+
+  function ghostStep() {
+    const dm = distMap(pac.x, pac.y), dist = dm.get(key(ghost.x, ghost.y)) ?? 99;
+    state = frightT > 0 ? "Huir" : dist <= 8 ? "Perseguir" : "Patrullar";
+    if (state === "Huir") {
+      const opts = nbrs(ghost.x, ghost.y).sort((a, b) => (dm.get(key(b[0], b[1])) ?? 0) - (dm.get(key(a[0], a[1])) ?? 0));
+      search = { explored: [], path: [], gh: {} };
+      if (opts.length) { ghost.x = opts[0][0]; ghost.y = opts[0][1]; }
+    } else {
+      let tx = pac.x, ty = pac.y;
+      if (state === "Patrullar") {
+        let [px, py] = PATROL[patrolIdx]; if (!free(px, py)) { px = 1; py = 1; }
+        if (ghost.x === px && ghost.y === py) { patrolIdx = (patrolIdx + 1) % 4; [px, py] = PATROL[patrolIdx]; }
+        tx = px; ty = py;
+      }
+      search = find(ghost.x, ghost.y, tx, ty, alg); search.tx = tx; search.ty = ty;
+      if (search.path.length) { ghost.x = search.path[0][0]; ghost.y = search.path[0][1]; }
+    }
+    updHud(); checkHit();
+  }
+  function pacStep() {
+    if (pacPath.length) { const [x, y] = pacPath.shift(); pacDir = [x - pac.x, y - pac.y]; pac.x = x; pac.y = y; }
+    else {
+      if (nextDir && free(pac.x + nextDir[0], pac.y + nextDir[1])) pacDir = nextDir;
+      if (pacDir && free(pac.x + pacDir[0], pac.y + pacDir[1])) { pac.x += pacDir[0]; pac.y += pacDir[1]; }
+    }
+    for (const p of pellets) if (p.on && p.x === pac.x && p.y === pac.y) { p.on = false; frightT = 8; pelletTimer = 15; say("¡Catarina! La plaga cambia a HUIR"); }
+    checkHit();
+  }
+  function checkHit() {
+    if (pac.x === ghost.x && pac.y === ghost.y) {
+      if (frightT > 0) { say("¡La catarina ganó! La plaga vuelve a su nido"); ghost.x = COLS - 2; ghost.y = ROWS - 2; ghost.px = ghost.x; ghost.py = ghost.y; frightT = 0; }
+      else { caught++; say("¡Atrapado! La plaga encontró el camino"); pac.x = 1; pac.y = 1; pac.px = 1; pac.py = 1; pacPath = []; pacDir = null; nextDir = null; ghost.x = COLS - 2; ghost.y = ROWS - 2; ghost.px = ghost.x; ghost.py = ghost.y; }
+      updHud();
+    }
+  }
+  function say(m) { msg = m; msgT = 2.2; }
+  function updHud() {
+    $("fa-estado").textContent = state; $("fa-exp").textContent = search.explored.length; $("fa-len").textContent = search.path.length; $("fa-caught").textContent = caught;
+    document.querySelectorAll("#fa-states span").forEach(s => s.classList.toggle("on", s.dataset.s === state));
+  }
+
+  // Enemigo: una plaga (gusano cogollero) hecha de segmentos
+  function drawGhost(x, y, scared) {
+    const col = scared ? C.violet : C.rose, r = S * 0.17, dx = Math.sign(pac.px - ghost.px), dy = Math.sign(pac.py - ghost.py);
+    for (let i = 3; i >= 0; i--) {
+      const ox = -dx * i * r * 1.15 + Math.sin(t * 8 + i) * 2, oy = -dy * i * r * 1.15 + (dx || !dy ? Math.cos(t * 8 + i) * 2 : 0);
+      g.fillStyle = i ? rgba(col, 1 - i * 0.12) : col; g.beginPath(); g.arc(x + ox, y + oy, i ? r * 1.05 : r * 1.35, 0, 7); g.fill();
+      g.strokeStyle = "#0c0b1c"; g.lineWidth = 1.5; g.stroke();
+    }
+    g.fillStyle = "#fff"; g.beginPath(); g.arc(x - 4, y - 3, 3.6, 0, 7); g.arc(x + 4, y - 3, 3.6, 0, 7); g.fill();
+    g.fillStyle = scared ? C.violet : "#1b1840"; g.beginPath(); g.arc(x - 4 + dx * 1.4, y - 3 + dy * 1.4, 1.8, 0, 7); g.arc(x + 4 + dx * 1.4, y - 3 + dy * 1.4, 1.8, 0, 7); g.fill();
+    g.strokeStyle = col; g.lineWidth = 2; g.beginPath(); g.moveTo(x - 3, y - 8); g.lineTo(x - 7, y - 14); g.moveTo(x + 3, y - 8); g.lineTo(x + 7, y - 14); g.stroke();
+  }
+  // Jugador: un elote
+  function drawCorn(x, y) {
+    g.save(); g.translate(x, y); g.rotate(Math.sin(t * 6) * 0.08);
+    g.fillStyle = C.lime; g.beginPath(); g.ellipse(-7, 5, 4, 12, 0.5, 0, 7); g.ellipse(7, 5, 4, 12, -0.5, 0, 7); g.fill();
+    g.fillStyle = "#ffd23d"; g.beginPath(); g.ellipse(0, -2, 8, 14, 0, 0, 7); g.fill();
+    g.fillStyle = "#e0a419"; for (let j = -3; j <= 2; j++) for (let i = -1; i <= 1; i++) { g.beginPath(); g.arc(i * 4, j * 4 + 1, 1.3, 0, 7); g.fill(); }
+    g.restore();
+  }
+  // Power-up: una catarina (depredador natural de la plaga)
+  function drawBug(x, y, k) {
+    g.fillStyle = "#e8433f"; g.beginPath(); g.arc(x, y + 1, 8 * k, 0, 7); g.fill();
+    g.fillStyle = "#111"; g.beginPath(); g.arc(x, y - 6 * k, 4 * k, 0, 7); g.fill();
+    g.strokeStyle = "#111"; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x, y - 6 * k); g.lineTo(x, y + 9 * k); g.stroke();
+    g.fillStyle = "#111"; for (const [a, b] of [[-4, -1], [4, -1], [-4, 4], [4, 4]]) { g.beginPath(); g.arc(x + a * k, y + b * k, 1.5 * k, 0, 7); g.fill(); }
+  }
+  function draw() {
+    g.fillStyle = C.screen; g.fillRect(0, 0, cv.width, cv.height);
+    // búsqueda
+    const ex = search.explored, total = ex.length;
+    const showN = animT >= 0 ? Math.min(total, Math.floor(animT * Math.max(8, total / 3))) : total;
+    for (let i = 0; i < showN; i++) {
+      const [x, y] = ex[i]; g.fillStyle = rgba(C.cyan, 0.12 + 0.38 * (1 - i / Math.max(1, total)));
+      g.fillRect(x * S + 2, y * S + 2, S - 4, S - 4);
+      if (animT >= 0 && alg !== "bfs") { const v = search.gh[key(x, y)]; if (v) { g.fillStyle = C.fg; g.font = "11px JetBrains Mono, monospace"; g.textAlign = "center"; g.fillText(alg === "astar" ? `${v[0]}+${v[1]}` : `${v[1]}`, x * S + S / 2, y * S + S / 2 + 4); } }
+      if (animT >= 0 && alg === "bfs") { const v = search.gh[key(x, y)]; if (v) { g.fillStyle = C.fg; g.font = "11px JetBrains Mono, monospace"; g.textAlign = "center"; g.fillText(`${v[0]}`, x * S + S / 2, y * S + S / 2 + 4); } }
+    }
+    // muros
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (grid[y][x]) {
+      g.fillStyle = C.line; g.fillRect(x * S, y * S, S, S);
+      g.strokeStyle = rgba(C.violet, .35); g.lineWidth = 2; g.strokeRect(x * S + 4, y * S + 4, S - 8, S - 8);
+    }
+    // camino
+    if ((animT < 0 || showN >= total) && search.path.length) {
+      g.strokeStyle = C.amber; g.lineWidth = 5; g.lineCap = "round"; g.lineJoin = "round"; g.beginPath();
+      g.moveTo(ghost.px * S + S / 2, ghost.py * S + S / 2);
+      for (const [x, y] of search.path) g.lineTo(x * S + S / 2, y * S + S / 2);
+      g.stroke();
+    }
+    if (search.tx !== undefined && state === "Patrullar") { g.strokeStyle = C.amber; g.setLineDash([5, 5]); g.lineWidth = 2; g.strokeRect(search.tx * S + 6, search.ty * S + 6, S - 12, S - 12); g.setLineDash([]); }
+    // píldoras
+    for (const p of pellets) if (p.on) drawBug(p.x * S + S / 2, p.y * S + S / 2, 1 + Math.sin(t * 6) * 0.12);
+    drawCorn(pac.px * S + S / 2, pac.py * S + S / 2);
+    drawGhost(ghost.px * S + S / 2, ghost.py * S + S / 2, frightT > 0 && (frightT > 2 || Math.floor(t * 6) % 2));
+    if (msgT > 0) {
+      g.fillStyle = rgba("#0c0b1c", .8); g.fillRect(0, cv.height / 2 - 30, cv.width, 60);
+      g.fillStyle = C.amber; g.font = "16px 'Press Start 2P', monospace"; g.textAlign = "center"; g.fillText(msg, cv.width / 2, cv.height / 2 + 6);
+    }
+    if (animT >= 0) {
+      g.fillStyle = rgba("#0c0b1c", .85); g.fillRect(0, 0, cv.width, 34); g.fillStyle = C.cyan; g.font = "14px JetBrains Mono, monospace"; g.textAlign = "left";
+      const lbl = alg === "astar" ? "A*: número = pasos recorridos + distancia que falta" : alg === "greedy" ? "Voraz: número = distancia que falta (no le importa lo recorrido)" : "Anchura: número = pasos desde la plaga (explora en ondas)";
+      g.fillText(`${lbl} · ${showN}/${total} casillas`, 10, 22);
+    }
+    g.textAlign = "left";
+  }
+
+  function tick(dt) {
+    t += dt; if (msgT > 0) msgT -= dt;
+    if (animT >= 0) { animT += dt; if (animT > 3 + 2.5) { animT = -1; } }
+    else if (playing) {
+      tPac += dt; tGhost += dt;
+      const pi = 0.9 / speed, gi = 1.05 / speed;
+      if (tPac >= pi) { tPac = 0; pacStep(); }
+      if (tGhost >= gi * (frightT > 0 ? 1.6 : 1)) { tGhost = 0; ghostStep(); }
+      if (frightT > 0) { frightT -= dt; if (frightT <= 0) { frightT = 0; } }
+      if (pelletTimer > 0) { pelletTimer -= dt; if (pelletTimer <= 0) pellets.forEach(p => p.on = true); }
+    }
+    const k = Math.min(1, dt * 14);
+    pac.px += (pac.x - pac.px) * k; pac.py += (pac.y - pac.py) * k;
+    ghost.px += (ghost.x - ghost.px) * k; ghost.py += (ghost.y - ghost.py) * k;
+    draw();
+  }
+
+  window.addEventListener("keydown", (e) => {
+    if (ACTIVE !== "fantasma" || !DIRS[e.key]) return;
+    if (e.key.startsWith("Arrow")) e.preventDefault();
+    nextDir = DIRS[e.key]; pacPath = [];
+  });
+  cv.addEventListener("pointerdown", (e) => {
+    const p = canvasPos(cv, e), x = Math.floor(p.x / S), y = Math.floor(p.y / S);
+    if (!free(x, y)) return;
+    const r = find(pac.x, pac.y, x, y, "astar"); pacPath = r.path.slice(); nextDir = null;
+  });
+  $("fa-play").addEventListener("click", () => { playing = !playing; $("fa-play").textContent = playing ? "Pausa" : "Jugar"; });
+  $("fa-anim").addEventListener("click", () => {
+    if (!search.explored.length) { search = find(ghost.x, ghost.y, pac.x, pac.y, alg); search.tx = pac.x; search.ty = pac.y; }
+    animT = 0;
+  });
+  $("fa-maze").addEventListener("click", () => { makeMaze(); caught = 0; updHud(); });
+  $("fa-alg").addEventListener("change", (e) => { alg = e.target.value; search = find(ghost.x, ghost.y, state === "Patrullar" ? (search.tx ?? pac.x) : pac.x, state === "Patrullar" ? (search.ty ?? pac.y) : pac.y, alg); updHud(); });
+  bindRange("fa-speed", null, (v) => speed = v);
+  makeMaze(); search = find(ghost.x, ghost.y, pac.x, pac.y, alg); updHud();
+  DEMOS.fantasma = { tick };
+})();
+
+// ===================== PARVADA: COMPORTAMIENTO DE GRUPO (BOIDS) =====================
+(function () {
+  const cv = $("bo-cv"), g = cv.getContext("2d"), W = cv.width, H = cv.height;
+  let N = 110, boids = [], wSep = 1.5, wAli = 1.0, wCoh = 1.0, vision = 60, predOn = true, showOne = true, playing = true;
+  let mouse = { x: -999, y: -999, in: false };
+  const MAXV = 140, MAXF = 220;
+  function reset() {
+    boids = Array.from({ length: N }, () => { const a = Math.random() * 7; return { x: rnd(0, W), y: rnd(0, H), vx: Math.cos(a) * 80, vy: Math.sin(a) * 80, f: [] }; });
+  }
+  function limit(x, y, m) { const l = Math.hypot(x, y); return l > m ? [x / l * m, y / l * m] : [x, y]; }
+  function steer(bd, dx, dy) { // hacia una velocidad deseada
+    const [tx, ty] = limit(dx, dy, MAXV); const d = Math.hypot(tx, ty) || 1;
+    return limit(tx / d * MAXV - bd.vx, ty / d * MAXV - bd.vy, MAXF);
+  }
+  function wrapD(d, L) { return d > L / 2 ? d - L : d < -L / 2 ? d + L : d; }
+  function step(dt) {
+    for (const bd of boids) {
+      let sx = 0, sy = 0, ax = 0, ay = 0, cx = 0, cy = 0, n = 0; bd.nb = [];
+      for (const o of boids) {
+        if (o === bd) continue;
+        const dx = wrapD(o.x - bd.x, W), dy = wrapD(o.y - bd.y, H), d = Math.hypot(dx, dy);
+        if (d < vision) {
+          n++; bd.nb.push(o); ax += o.vx; ay += o.vy; cx += dx; cy += dy;
+          if (d < vision * 0.45 && d > 0) { sx -= dx / (d * d); sy -= dy / (d * d); }
+        }
+      }
+      let fs = [0, 0], fa = [0, 0], fc = [0, 0], fp = [0, 0];
+      if (n) { fs = steer(bd, sx, sy); fa = steer(bd, ax / n, ay / n); fc = steer(bd, cx / n, cy / n); }
+      if (predOn && mouse.in) {
+        const dx = bd.x - mouse.x, dy = bd.y - mouse.y, d = Math.hypot(dx, dy);
+        if (d < 120) fp = steer(bd, dx, dy).map(v => v * 3);
+      }
+      bd.f = [fs.map(v => v * wSep), fa.map(v => v * wAli), fc.map(v => v * wCoh), fp];
+      let fx = 0, fy = 0; for (const f of bd.f) { fx += f[0]; fy += f[1]; }
+      bd.vx += fx * dt; bd.vy += fy * dt; [bd.vx, bd.vy] = limit(bd.vx, bd.vy, MAXV);
+      if (Math.hypot(bd.vx, bd.vy) < 40) { bd.vx *= 1.05; bd.vy *= 1.05; }
+    }
+    for (const bd of boids) { bd.x = (bd.x + bd.vx * dt + W) % W; bd.y = (bd.y + bd.vy * dt + H) % H; }
+  }
+  function drawBird(bd, col) {
+    const a = Math.atan2(bd.vy, bd.vx);
+    g.save(); g.translate(bd.x, bd.y); g.rotate(a);
+    g.fillStyle = col; g.beginPath(); g.moveTo(9, 0); g.lineTo(-6, 5); g.lineTo(-3, 0); g.lineTo(-6, -5); g.closePath(); g.fill();
+    g.restore();
+  }
+  function arrow(x, y, fx, fy, col) {
+    const k = 0.35, ex = x + fx * k, ey = y + fy * k; if (Math.hypot(fx, fy) < 4) return;
+    g.strokeStyle = col; g.lineWidth = 3; g.beginPath(); g.moveTo(x, y); g.lineTo(ex, ey); g.stroke();
+    const a = Math.atan2(ey - y, ex - x); g.fillStyle = col; g.beginPath(); g.moveTo(ex, ey); g.lineTo(ex - 8 * Math.cos(a - .5), ey - 8 * Math.sin(a - .5)); g.lineTo(ex - 8 * Math.cos(a + .5), ey - 8 * Math.sin(a + .5)); g.fill();
+  }
+  function draw() {
+    g.fillStyle = C.screen; g.fillRect(0, 0, W, H);
+    g.fillStyle = rgba(C.muted, .15); for (let i = 0; i < 50; i++) g.fillRect((i * 173) % W, (i * 97) % H, 2, 2);
+    const one = boids[0];
+    if (showOne && one) {
+      g.fillStyle = rgba(C.cyan, .08); g.strokeStyle = rgba(C.cyan, .5); g.lineWidth = 1;
+      g.beginPath(); g.arc(one.x, one.y, vision, 0, 7); g.fill(); g.stroke();
+      g.strokeStyle = rgba(C.cyan, .35);
+      for (const o of one.nb || []) { const dx = wrapD(o.x - one.x, W), dy = wrapD(o.y - one.y, H); g.beginPath(); g.moveTo(one.x, one.y); g.lineTo(one.x + dx, one.y + dy); g.stroke(); }
+    }
+    for (const bd of boids) drawBird(bd, bd === one && showOne ? C.amber : rgba(C.fg, .85));
+    if (showOne && one && one.f.length) {
+      arrow(one.x, one.y, one.f[0][0], one.f[0][1], C.rose);
+      arrow(one.x, one.y, one.f[1][0], one.f[1][1], C.lime);
+      arrow(one.x, one.y, one.f[2][0], one.f[2][1], C.violet);
+    }
+    if (predOn && mouse.in) {
+      g.fillStyle = C.rose; g.beginPath(); g.arc(mouse.x, mouse.y, 11, 0, 7); g.fill();
+      g.strokeStyle = rgba(C.rose, .4); g.beginPath(); g.arc(mouse.x, mouse.y, 120, 0, 7); g.stroke();
+      g.fillStyle = C.fg; g.font = "11px 'Press Start 2P', monospace"; g.textAlign = "center"; g.fillText("HALCÓN", mouse.x, mouse.y - 18); g.textAlign = "left";
+    }
+  }
+  function tick(dt) { if (playing) { step(dt / 2); step(dt / 2); } draw(); $("bo-n").textContent = boids.length; $("bo-v").textContent = one() ? (one().nb || []).length : 0; }
+  const one = () => boids[0];
+  cv.addEventListener("pointermove", (e) => { const p = canvasPos(cv, e); mouse = { x: p.x, y: p.y, in: true }; });
+  cv.addEventListener("pointerdown", (e) => { const p = canvasPos(cv, e); mouse = { x: p.x, y: p.y, in: true }; });
+  cv.addEventListener("pointerleave", () => mouse.in = false);
+  $("bo-play").addEventListener("click", () => { playing = !playing; $("bo-play").textContent = playing ? "Pausa" : "Continuar"; });
+  $("bo-reset").addEventListener("click", reset);
+  $("bo-pred").addEventListener("click", (e) => { predOn = !predOn; setPressed(e.currentTarget, predOn); });
+  $("bo-one").addEventListener("click", (e) => { showOne = !showOne; setPressed(e.currentTarget, showOne); });
+  bindRange("bo-sep", v => (v / 10).toFixed(1), v => wSep = v / 10);
+  bindRange("bo-ali", v => (v / 10).toFixed(1), v => wAli = v / 10);
+  bindRange("bo-coh", v => (v / 10).toFixed(1), v => wCoh = v / 10);
+  bindRange("bo-vis", v => v + " px", v => vision = v);
+  reset();
+  DEMOS.parvada = { tick };
+})();
+
+// ===================== 2 · GATO CON MINIMAX =====================
+(function () {
+  const cv = $("ga-cv"), g = cv.getContext("2d");
+  const BX = 40, BY = 80, BS = 420, CS = BS / 3;
+  const LINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+  let b, turn, over, winLine, scores = {}, nodes = 0, aiFirst = false, ab = false, show = true;
+  let tally = { h: 0, a: 0, d: 0 }, thinkT = 0, pending = null, t = 0, info = "";
+
+  function winner(s) { for (const l of LINES) if (s[l[0]] && s[l[0]] === s[l[1]] && s[l[0]] === s[l[2]]) return { p: s[l[0]], l }; return s.every(Boolean) ? { p: "draw" } : null; }
+  // Minimax: O = IA (maximiza), X = humano (minimiza). Ganar antes vale un poco más.
+  function minimax(s, isMax, depth, alpha, beta) {
+    nodes++;
+    const w = winner(s);
+    if (w) return w.p === "O" ? 10 - depth : w.p === "X" ? depth - 10 : 0;
+    let best = isMax ? -Infinity : Infinity;
+    for (let i = 0; i < 9; i++) if (!s[i]) {
+      s[i] = isMax ? "O" : "X";
+      const v = minimax(s, !isMax, depth + 1, alpha, beta);
+      s[i] = null;
+      if (isMax) { best = Math.max(best, v); alpha = Math.max(alpha, v); } else { best = Math.min(best, v); beta = Math.min(beta, v); }
+      if (ab && beta <= alpha) break;
+    }
+    return best;
+  }
+  function think() {
+    nodes = 0; scores = {};
+    for (let i = 0; i < 9; i++) if (!b[i]) { b[i] = "O"; scores[i] = minimax(b, false, 1, -Infinity, Infinity); b[i] = null; }
+    $("ga-nodes").textContent = nodes.toLocaleString("es-MX");
+    const best = Math.max(...Object.values(scores));
+    const opts = Object.keys(scores).filter(k => scores[k] === best).map(Number);
+    return opts[Math.floor(Math.random() * opts.length)];
+  }
+  function newGame() {
+    b = Array(9).fill(null); over = false; winLine = null; scores = {}; info = "";
+    turn = aiFirst ? "O" : "X"; $("ga-nodes").textContent = "0";
+    if (aiFirst) { pending = think(); thinkT = show ? 1.2 : 0.2; info = "La IA está imaginando partidas…"; }
+  }
+  function end() {
+    const w = winner(b); if (!w) return false;
+    over = true; winLine = w.l || null;
+    if (w.p === "X") { tally.h++; info = "¡Ganaste! (revisa: ¿la IA tenía poda o se equivocó?)"; }
+    else if (w.p === "O") { tally.a++; info = "Ganó la IA: vio el final antes que tú."; }
+    else { tally.d++; info = "Empate: contra una IA perfecta es lo mejor posible."; }
+    $("ga-h").textContent = tally.h; $("ga-a").textContent = tally.a; $("ga-d").textContent = tally.d;
+    return true;
+  }
+  const lbl = (v) => v > 0 ? "+1" : v < 0 ? "−1" : "0";
+  const col = (v) => v > 0 ? C.lime : v < 0 ? C.rose : C.amber;
+  function drawMark(m, cx, cy, r, alpha = 1) {
+    g.globalAlpha = alpha; g.lineWidth = r / 4; g.lineCap = "round";
+    if (m === "X") { g.strokeStyle = C.cyan; g.beginPath(); g.moveTo(cx - r, cy - r); g.lineTo(cx + r, cy + r); g.moveTo(cx + r, cy - r); g.lineTo(cx - r, cy + r); g.stroke(); }
+    else if (m === "O") { g.strokeStyle = C.amber; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.stroke(); }
+    g.globalAlpha = 1;
+  }
+  function draw() {
+    g.fillStyle = C.screen; g.fillRect(0, 0, cv.width, cv.height);
+    g.font = "15px 'Press Start 2P', monospace"; g.fillStyle = C.fg; g.textAlign = "left";
+    g.fillText(over ? "FIN DE LA PARTIDA" : turn === "X" ? "TU TURNO (X)" : "TURNO DE LA IA (O)", BX, 46);
+    g.strokeStyle = C.line; g.lineWidth = 6; g.lineCap = "round";
+    for (let i = 1; i < 3; i++) { g.beginPath(); g.moveTo(BX + i * CS, BY + 8); g.lineTo(BX + i * CS, BY + BS - 8); g.stroke(); g.beginPath(); g.moveTo(BX + 8, BY + i * CS); g.lineTo(BX + BS - 8, BY + i * CS); g.stroke(); }
+    for (let i = 0; i < 9; i++) {
+      const cx = BX + (i % 3) * CS + CS / 2, cy = BY + Math.floor(i / 3) * CS + CS / 2;
+      if (b[i]) drawMark(b[i], cx, cy, CS * 0.28);
+      else if (show && scores[i] !== undefined) {
+        g.fillStyle = rgba(col(scores[i]), .18); g.fillRect(cx - CS / 2 + 6, cy - CS / 2 + 6, CS - 12, CS - 12);
+        g.fillStyle = col(scores[i]); g.font = "22px 'Press Start 2P', monospace"; g.textAlign = "center"; g.fillText(lbl(scores[i]), cx, cy + 10);
+      }
+    }
+    if (winLine) {
+      const p = (i) => [BX + (i % 3) * CS + CS / 2, BY + Math.floor(i / 3) * CS + CS / 2];
+      const [a1, a2] = p(winLine[0]), [z1, z2] = p(winLine[2]);
+      g.strokeStyle = C.fg; g.lineWidth = 8; g.beginPath(); g.moveTo(a1, a2); g.lineTo(z1, z2); g.stroke();
+    }
+    // Opciones que evaluó la IA (primer nivel del árbol)
+    const RX = 500; g.textAlign = "left"; g.fillStyle = C.cyan; g.font = "12px 'Press Start 2P', monospace";
+    g.fillText("LO QUE IMAGINÓ LA IA", RX, 46);
+    g.font = "14px JetBrains Mono, monospace"; g.fillStyle = C.muted;
+    g.fillText("Cada tablero = una posible jugada de O", RX, 70);
+    const keys = Object.keys(scores).map(Number);
+    if (!keys.length) { g.fillText("Juega una X y mira cómo piensa.", RX, 110); }
+    keys.forEach((k, j) => {
+      const mx = RX + (j % 3) * 108, my = 86 + Math.floor(j / 3) * 132, ms = 90, mc = ms / 3;
+      g.strokeStyle = col(scores[k]); g.lineWidth = 2; g.strokeRect(mx, my, ms, ms);
+      g.strokeStyle = C.line; g.lineWidth = 1;
+      for (let i = 1; i < 3; i++) { g.beginPath(); g.moveTo(mx + i * mc, my); g.lineTo(mx + i * mc, my + ms); g.stroke(); g.beginPath(); g.moveTo(mx, my + i * mc); g.lineTo(mx + ms, my + i * mc); g.stroke(); }
+      for (let i = 0; i < 9; i++) { const m = i === k ? "O" : b[i]; if (m) drawMark(m, mx + (i % 3) * mc + mc / 2, my + Math.floor(i / 3) * mc + mc / 2, mc * 0.28, i === k ? 1 : 0.55); }
+      g.fillStyle = col(scores[k]); g.font = "12px 'Press Start 2P', monospace"; g.textAlign = "center";
+      g.fillText(lbl(scores[k]), mx + ms / 2, my + ms + 20); g.textAlign = "left";
+    });
+    if (info) { g.fillStyle = C.amber; g.font = "15px JetBrains Mono, monospace"; g.fillText(info, BX, BY + BS + 42); }
+  }
+  function tick(dt) {
+    t += dt;
+    if (pending !== null) {
+      thinkT -= dt;
+      if (thinkT <= 0) { b[pending] = "O"; pending = null; turn = "X"; if (!end()) info = "Tu turno. Los números muestran cómo calificó la IA cada casilla."; }
+    }
+    draw();
+  }
+  cv.addEventListener("pointerdown", (e) => {
+    if (over || turn !== "X" || pending !== null) return;
+    const p = canvasPos(cv, e), cx = Math.floor((p.x - BX) / CS), cy = Math.floor((p.y - BY) / CS);
+    if (cx < 0 || cy < 0 || cx > 2 || cy > 2) return;
+    const i = cy * 3 + cx; if (b[i]) return;
+    b[i] = "X"; scores = {};
+    if (end()) return;
+    turn = "O"; info = "La IA está imaginando todas las partidas posibles…";
+    pending = think(); thinkT = show ? 1.2 : 0.25;
+  });
+  $("ga-new").addEventListener("click", newGame);
+  $("ga-first").addEventListener("click", (e) => { aiFirst = !aiFirst; setPressed(e.currentTarget, aiFirst); newGame(); });
+  $("ga-ab").addEventListener("click", (e) => { ab = !ab; setPressed(e.currentTarget, ab); info = ab ? "Poda activada: descarta ramas que ya no pueden cambiar la decisión." : "Poda desactivada: imagina todas las ramas."; });
+  $("ga-show").addEventListener("click", (e) => { show = !show; setPressed(e.currentTarget, show); });
+  newGame();
+  DEMOS.gato = { tick };
+})();
+
+// ===================== CONECTA 4 CON BÚSQUEDA MONTE CARLO =====================
+(function () {
+  const cv = $("c4-cv"), g = cv.getContext("2d");
+  const COLS = 7, ROWS = 6, CS = 64, BX = 36, BY = 56;
+  const HUM = 1, IA = 2;
+  let b, turn, over, winCells, stats, thinking = null, aiFirst = false, show = true, budget = 800, info = "", tally = { h: 0, a: 0, d: 0 }, drop = null;
+
+  const idx = (c, r) => r * COLS + c;
+  function legal(s) { const m = []; for (let c = 0; c < COLS; c++) if (!s[idx(c, 0)]) m.push(c); return m; }
+  function play(s, c, p) { for (let r = ROWS - 1; r >= 0; r--) if (!s[idx(c, r)]) { s[idx(c, r)] = p; return r; } return -1; }
+  function winner(s) {
+    const D = [[1, 0], [0, 1], [1, 1], [1, -1]];
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      const p = s[idx(c, r)]; if (!p) continue;
+      for (const [dc, dr] of D) {
+        const cells = [[c, r]];
+        for (let k = 1; k < 4; k++) { const cc = c + dc * k, rr = r + dr * k; if (cc < 0 || cc >= COLS || rr < 0 || rr >= ROWS || s[idx(cc, rr)] !== p) break; cells.push([cc, rr]); }
+        if (cells.length === 4) return { p, cells };
+      }
+    }
+    return s.every(Boolean) ? { p: 0 } : null;
+  }
+  // Una partida al azar desde el estado s, con turno t. Devuelve 1 si gana la IA, 0.5 empate, 0 si pierde.
+  function rollout(s, t) {
+    s = s.slice();
+    for (let i = 0; i < 42; i++) {
+      const w = winner(s); if (w) return w.p === IA ? 1 : w.p === 0 ? 0.5 : 0;
+      const m = legal(s);
+      // pequeña ayuda: si hay una jugada que gana ya, la toma
+      let pick = null;
+      for (const c of m) { const r = play(s, c, t); const ww = winner(s); s[idx(c, r)] = 0; if (ww && ww.p === t) { pick = c; break; } }
+      play(s, pick ?? m[Math.floor(Math.random() * m.length)], t);
+      t = 3 - t;
+    }
+    return 0.5;
+  }
+  function newStats() { stats = Array.from({ length: COLS }, () => ({ n: 0, w: 0 })); }
+  // Monte Carlo con UCB1 en la raíz: reparte las simulaciones entre las columnas más prometedoras.
+  function simulate(k) {
+    const m = legal(b); let total = stats.reduce((a, s) => a + s.n, 0);
+    for (let i = 0; i < k && thinking.done < budget; i++) {
+      let best = -1, bv = -Infinity;
+      for (const c of m) {
+        const s = stats[c];
+        const v = s.n === 0 ? Infinity : s.w / s.n + 1.4 * Math.sqrt(Math.log(total + 1) / s.n);
+        if (v > bv) { bv = v; best = c; }
+      }
+      const s2 = b.slice(); play(s2, best, IA);
+      const w = winner(s2);
+      const res = w ? (w.p === IA ? 1 : w.p === 0 ? 0.5 : 0) : rollout(s2, HUM);
+      stats[best].n++; stats[best].w += res; total++; thinking.done++;
+    }
+  }
+  function bestMove() { const m = legal(b); return m.reduce((a, c) => stats[c].n > stats[a].n ? c : a, m[0]); }
+  function newGame() {
+    b = Array(COLS * ROWS).fill(0); over = false; winCells = null; newStats(); info = ""; drop = null;
+    turn = aiFirst ? IA : HUM; $("c4-sims").textContent = "0";
+    if (turn === IA) startThinking();
+  }
+  function startThinking() { newStats(); thinking = { done: 0, t: 0 }; info = "La IA está jugando partidas imaginarias al azar…"; }
+  function checkEnd() {
+    const w = winner(b); if (!w) return false;
+    over = true; winCells = w.cells || null;
+    if (w.p === HUM) { tally.h++; info = "¡Ganaste! Prueba con más simulaciones."; }
+    else if (w.p === IA) { tally.a++; info = "Ganó la IA: sus partidas imaginarias le mostraron el camino."; }
+    else { tally.d++; info = "Empate."; }
+    $("c4-h").textContent = tally.h; $("c4-a").textContent = tally.a; $("c4-d").textContent = tally.d;
+    return true;
+  }
+  function drawDisc(x, y, p, r, a = 1) {
+    g.globalAlpha = a;
+    g.fillStyle = p === HUM ? C.cyan : C.amber; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+    g.strokeStyle = rgba("#000000", .25); g.lineWidth = 3; g.beginPath(); g.arc(x, y, r * 0.7, 0, 7); g.stroke();
+    g.globalAlpha = 1;
+  }
+  function draw() {
+    g.fillStyle = C.screen; g.fillRect(0, 0, cv.width, cv.height);
+    g.font = "14px 'Press Start 2P', monospace"; g.fillStyle = C.fg; g.textAlign = "left";
+    g.fillText(over ? "FIN DE LA PARTIDA" : turn === HUM ? "TU TURNO (AZUL)" : "TURNO DE LA IA (ÁMBAR)", BX, 34);
+    // tablero
+    g.fillStyle = "#2a3f9c"; g.beginPath(); g.roundRect(BX - 8, BY - 8, COLS * CS + 16, ROWS * CS + 16, 12); g.fill();
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+      const x = BX + c * CS + CS / 2, y = BY + r * CS + CS / 2, p = b[idx(c, r)];
+      if (p && !(drop && drop.c === c && drop.r === r)) drawDisc(x, y, p, CS * 0.4);
+      else { g.fillStyle = C.screen; g.beginPath(); g.arc(x, y, CS * 0.4, 0, 7); g.fill(); }
+    }
+    if (drop) drawDisc(BX + drop.c * CS + CS / 2, drop.y, drop.p, CS * 0.4);
+    if (winCells) {
+      const [a, z] = [winCells[0], winCells[3]];
+      g.strokeStyle = C.fg; g.lineWidth = 6; g.lineCap = "round"; g.beginPath();
+      g.moveTo(BX + a[0] * CS + CS / 2, BY + a[1] * CS + CS / 2); g.lineTo(BX + z[0] * CS + CS / 2, BY + z[1] * CS + CS / 2); g.stroke();
+    }
+    // barras: probabilidad estimada de ganar por columna
+    const by = BY + ROWS * CS + 24, bh = 96;
+    g.font = "12px JetBrains Mono, monospace"; g.fillStyle = C.muted;
+    g.fillText("Si la IA tira aquí, gana en… (% de partidas imaginadas)", BX, by - 6);
+    const tot = stats.reduce((a, s) => a + s.n, 0), bm = tot ? bestMove() : -1;
+    for (let c = 0; c < COLS; c++) {
+      const s = stats[c], x = BX + c * CS + 8, w = CS - 16;
+      g.fillStyle = C.panel; g.fillRect(x, by, w, bh);
+      if (show && s.n) {
+        const pr = s.w / s.n, h = bh * pr;
+        g.fillStyle = c === bm ? C.amber : rgba(C.amber, .45); g.fillRect(x, by + bh - h, w, h);
+        g.fillStyle = C.fg; g.textAlign = "center"; g.font = "12px JetBrains Mono, monospace";
+        g.fillText(Math.round(pr * 100) + "%", x + w / 2, by + bh - h - 4 < by + 12 ? by + 14 : by + bh - h - 4);
+        g.fillStyle = C.muted; g.fillText(s.n, x + w / 2, by + bh + 14); g.textAlign = "left";
+      }
+    }
+    // panel derecho
+    const RX = 520;
+    g.fillStyle = C.cyan; g.font = "12px 'Press Start 2P', monospace"; g.fillText("CÓMO PIENSA", RX, 76);
+    g.fillStyle = C.fg; g.font = "15px 'Atkinson Hyperlegible', sans-serif";
+    const lines = ["1. Para cada columna posible…", "2. imagina partidas completas", "   jugadas al azar,", "3. cuenta cuántas gana,", "4. y prueba más las columnas", "   que van ganando (UCB1).", "", "Así pensaba AlphaGo (con", "una red neuronal de ayuda)."];
+    lines.forEach((t, i) => g.fillText(t, RX, 108 + i * 24));
+    g.fillStyle = C.muted; g.font = "13px JetBrains Mono, monospace";
+    g.fillText("Debajo de cada columna:", RX, 340); g.fillText("veces que la probó", RX, 360);
+    if (info) { g.fillStyle = C.amber; g.font = "15px 'Atkinson Hyperlegible', sans-serif"; wrap(info, RX, 420, 290, 20); }
+  }
+  function wrap(t, x, y, w, lh) { const ws = t.split(" "); let line = ""; for (const wd of ws) { const tl = line + wd + " "; if (g.measureText(tl).width > w && line) { g.fillText(line, x, y); line = wd + " "; y += lh; } else line = tl; } g.fillText(line, x, y); }
+  function tick(dt) {
+    if (drop) { drop.v += 2600 * dt; drop.y += drop.v * dt; const ty = BY + drop.r * CS + CS / 2; if (drop.y >= ty) { drop = null; afterDrop(); } }
+    if (thinking && !drop) {
+      thinking.t += dt;
+      simulate(Math.max(20, Math.ceil(budget / 40)));
+      $("c4-sims").textContent = thinking.done.toLocaleString("es-MX");
+      if (thinking.done >= budget && thinking.t > (show ? 0.9 : 0.1)) {
+        const c = bestMove(); thinking = null; doMove(c, IA);
+      }
+    }
+    draw();
+  }
+  let pendingP = 0;
+  function doMove(c, p) { const r = play(b, c, p); drop = { c, r, p, y: BY - CS / 2, v: 0 }; pendingP = p; }
+  function afterDrop() {
+    if (checkEnd()) return;
+    if (pendingP === IA) { turn = HUM; info = "Tu turno. Las barras muestran lo que la IA calculó."; }
+    else { turn = IA; startThinking(); }
+  }
+  cv.addEventListener("pointerdown", (e) => {
+    if (over || turn !== HUM || thinking || drop) return;
+    const p = canvasPos(cv, e), c = Math.floor((p.x - BX) / CS);
+    if (c < 0 || c >= COLS || !legal(b).includes(c)) return;
+    newStats(); doMove(c, HUM);
+  });
+  $("c4-new").addEventListener("click", newGame);
+  $("c4-first").addEventListener("click", (e) => { aiFirst = !aiFirst; setPressed(e.currentTarget, aiFirst); newGame(); });
+  $("c4-show").addEventListener("click", (e) => { show = !show; setPressed(e.currentTarget, show); });
+  bindRange("c4-budget", v => v.toLocaleString("es-MX"), v => budget = v);
+  newGame();
+  DEMOS.conecta = { tick };
+})();
+
+// ===================== MUNDOS PROCEDURALES: RUIDO + SEMILLA =====================
+(function () {
+  const cv = $("mu-cv"), g = cv.getContext("2d"), W = cv.width, H = cv.height;
+  const T = 6, GW = Math.floor(W / T), GH = Math.floor(H / T);
+  let dirty = true, seed = 46, oct = 4, escala = 60, mar = 0.42, aldeas = true, alt = null;
+  // Generador pseudoaleatorio con semilla (mulberry32): misma semilla, mismos números
+  function prng(s) { return function () { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  // Ruido de valor: una rejilla de números al azar, suavizada entre puntos
+  function capa(rand, celda) {
+    const cw = Math.ceil(GW / celda) + 2, ch = Math.ceil(GH / celda) + 2, R = Array.from({ length: cw * ch }, rand);
+    const sm = (t) => t * t * (3 - 2 * t), out = new Float32Array(GW * GH);
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+      const fx = x / celda, fy = y / celda, x0 = Math.floor(fx), y0 = Math.floor(fy), tx = sm(fx - x0), ty = sm(fy - y0);
+      const a = R[y0 * cw + x0], b = R[y0 * cw + x0 + 1], c = R[(y0 + 1) * cw + x0], d = R[(y0 + 1) * cw + x0 + 1];
+      out[y * GW + x] = (a + (b - a) * tx) * (1 - ty) + (c + (d - c) * tx) * ty;
+    }
+    return out;
+  }
+  let capas = [];
+  function generar() {
+    const rand = prng(seed); capas = []; alt = new Float32Array(GW * GH);
+    let amp = 1, tot = 0, celda = escala / T;
+    for (let o = 0; o < oct; o++) { const c = capa(rand, Math.max(1, celda)); capas.push({ c, amp }); for (let i = 0; i < alt.length; i++) alt[i] += c[i] * amp; tot += amp; amp *= 0.5; celda /= 2; }
+    for (let i = 0; i < alt.length; i++) alt[i] /= tot;
+    pintarCapas(); dirty = true;
+  }
+  function color(h) {
+    if (h < mar - 0.08) return "#1d3f8a";
+    if (h < mar) return "#2f63c0";
+    if (h < mar + 0.03) return "#e7d38a";
+    if (h < mar + 0.18) return "#5fae4f";
+    if (h < mar + 0.30) return "#2f7a3c";
+    if (h < mar + 0.40) return "#7d6a58";
+    return "#c9c2b8";
+  }
+  function draw() {
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) { g.fillStyle = color(alt[y * GW + x]); g.fillRect(x * T, y * T, T, T); }
+    if (aldeas) {
+      // Regla sencilla: aldea en pasto, plano y a menos de 4 celdas del agua; separadas entre sí
+      const rand = prng(seed + 7), puestas = [];
+      for (let k = 0; k < 4000 && puestas.length < 14; k++) {
+        const x = 2 + Math.floor(rand() * (GW - 4)), y = 2 + Math.floor(rand() * (GH - 4)), h = alt[y * GW + x];
+        if (h < mar + 0.03 || h > mar + 0.18) continue;
+        const pend = Math.abs(alt[y * GW + x + 1] - alt[y * GW + x - 1]) + Math.abs(alt[(y + 1) * GW + x] - alt[(y - 1) * GW + x]); if (pend > 0.04) continue;
+        let agua = false; for (let dy = -4; dy <= 4 && !agua; dy++) for (let dx = -4; dx <= 4; dx++) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < GW && yy < GH && alt[yy * GW + xx] < mar) { agua = true; break; } }
+        if (!agua || puestas.some(p => Math.hypot(p.x - x, p.y - y) < 12)) continue;
+        puestas.push({ x, y });
+      }
+      for (const p of puestas) { const X = p.x * T, Y = p.y * T; g.fillStyle = C.rose; g.fillRect(X - 6, Y - 3, 12, 9); g.beginPath(); g.moveTo(X - 8, Y - 3); g.lineTo(X, Y - 11); g.lineTo(X + 8, Y - 3); g.fillStyle = C.amber; g.fill(); }
+      $("mu-ald").textContent = puestas.length;
+    }
+    let agua = 0; for (const h of alt) if (h < mar) agua++;
+    $("mu-agua").textContent = Math.round(agua / alt.length * 100) + " %";
+    g.fillStyle = rgba("#0c0b1c", .75); g.fillRect(8, 8, 190, 30); g.fillStyle = C.fg; g.font = "12px 'Press Start 2P', monospace"; g.fillText("SEMILLA " + seed, 16, 29);
+  }
+  function pintarCapas() {
+    const c = $("mu-oct"), q = c.getContext("2d"), w = c.width, h = c.height, n = capas.length, bw = (w - 10 * (n + 1)) / (n + 1);
+    q.fillStyle = C.screen; q.fillRect(0, 0, w, h);
+    const muestra = (arr, x0) => { const sx = GW / bw, sy = GH / (h - 30); for (let y = 0; y < h - 30; y += 2) for (let x = 0; x < bw; x += 2) { const v = arr[Math.floor(y * sy) * GW + Math.floor(x * sx)]; q.fillStyle = mix("#0c0b1c", "#f3ede0", v); q.fillRect(x0 + x, 22 + y, 2, 2); } };
+    q.font = "11px JetBrains Mono, monospace";
+    capas.forEach((cp, i) => { const x0 = 10 + i * (bw + 10); muestra(cp.c, x0); q.fillStyle = C.muted; q.fillText(`capa ${i + 1} ×${cp.amp}`, x0, 14); });
+    const x0 = 10 + n * (bw + 10); muestra(alt, x0); q.fillStyle = C.amber; q.fillText("= suma", x0, 14);
+  }
+  $("mu-new").addEventListener("click", () => { seed = Math.floor(Math.random() * 99999); $("mu-seed").value = seed; generar(); });
+  $("mu-seed").addEventListener("change", (e) => { seed = parseInt(e.target.value) || 0; generar(); });
+  $("mu-ald-t").addEventListener("click", (e) => { aldeas = !aldeas; setPressed(e.currentTarget, aldeas); dirty = true; });
+  bindRange("mu-octs", null, v => { oct = v; if (alt) generar(); });
+  bindRange("mu-esc", v => v + " px", v => { escala = v; if (alt) generar(); });
+  bindRange("mu-mar", v => (v / 100).toFixed(2), v => { mar = v / 100; dirty = true; });
+  generar();
+  DEMOS.mundo = { tick: () => { if (dirty) { draw(); dirty = false; } } };
+})();
+
+// ===================== EL ADIVINADOR: ÁRBOL DE DECISIÓN QUE APRENDE (ID3) =====================
+(function () {
+  const cv = $("ar-cv"), g = cv.getContext("2d"), W = cv.width, H = cv.height;
+  let ATTR = [
+    { k: "vuela", q: "¿Vuela?" }, { k: "plumas", q: "¿Tiene plumas?" }, { k: "agua", q: "¿Vive en el agua o junto a ella?" },
+    { k: "patas4", q: "¿Camina en 4 patas?" }, { k: "noche", q: "¿Sale sobre todo de noche?" }, { k: "concha", q: "¿Tiene caparazón o coraza?" },
+    { k: "carne", q: "¿Come carne?" }, { k: "casa", q: "¿Vive con las personas?" }];
+  const BASE = [
+    ["loro", 1, 1, 0, 0, 0, 0, 0, 0], ["lechuza", 1, 1, 0, 0, 1, 0, 1, 0], ["garza", 1, 1, 1, 0, 0, 0, 1, 0], ["pato", 1, 1, 1, 0, 0, 0, 0, 1],
+    ["gallina", 0, 1, 0, 0, 0, 0, 0, 1], ["murciélago", 1, 0, 0, 0, 1, 0, 0, 0], ["mariposa", 1, 0, 0, 0, 0, 0, 0, 0], ["tlacuache", 0, 0, 0, 1, 1, 0, 0, 0],
+    ["armadillo", 0, 0, 0, 1, 1, 1, 0, 0], ["tortuga", 0, 0, 1, 1, 0, 1, 0, 0], ["jaguar", 0, 0, 0, 1, 1, 0, 1, 0], ["venado", 0, 0, 0, 1, 0, 0, 0, 0],
+    ["perro", 0, 0, 0, 1, 0, 0, 1, 1], ["vaca", 0, 0, 0, 1, 0, 0, 0, 1], ["bagre", 0, 0, 1, 0, 0, 0, 1, 0]];
+  let data, tree, cur, path, msg, phase; // phase: jugar | adivino | aprender | nuevaPregunta
+  const H2 = (n) => n ? Math.log2(n) : 0; // entropía con clases distintas (cada animal es su propia clase)
+  function entropy(rows) { const m = {}; rows.forEach(r => m[r.name] = (m[r.name] || 0) + 1); let e = 0; for (const k in m) { const p = m[k] / rows.length; e -= p * Math.log2(p); } return e; }
+  function gain(rows, a) { const y = rows.filter(r => r.v[a]), n = rows.filter(r => !r.v[a]); if (!y.length || !n.length) return 0; return entropy(rows) - (y.length / rows.length) * entropy(y) - (n.length / rows.length) * entropy(n); }
+  function build(rows, used) {
+    if (rows.length <= 1) return { leaf: true, rows };
+    let best = -1, bg = 1e-9;
+    ATTR.forEach((_, a) => { if (used.has(a)) return; const gg = gain(rows, a); if (gg > bg) { bg = gg; best = a; } });
+    if (best < 0) return { leaf: true, rows };
+    const u = new Set(used); u.add(best);
+    return { a: best, gain: bg, n: rows.length, si: build(rows.filter(r => r.v[best]), u), no: build(rows.filter(r => !r.v[best]), u) };
+  }
+  function retrain() { tree = build(data, new Set()); layout(tree); start(); }
+  function start() { cur = tree; path = [tree]; phase = "jugar"; msg = "Piensa en un animal de la Huasteca y responde."; ui(); }
+  function reset() { data = BASE.map(r => ({ name: r[0], v: r.slice(1) })); retrain(); }
+  // posiciones para dibujar el árbol
+  let maxDepth = 0;
+  function layout(root) {
+    const hojas = []; (function rec(n, d) { n.d = d; if (n.leaf) hojas.push(n); else { rec(n.si, d + 1); rec(n.no, d + 1); } })(root, 0);
+    const paso = (W - 40) / Math.max(1, hojas.length);
+    hojas.forEach((h, i) => { h.x = 20 + paso * (i + 0.5); h.alt = i % 2; });
+    (function pos(n) { if (!n.leaf) { pos(n.si); pos(n.no); n.x = (n.si.x + n.no.x) / 2; } })(root);
+  }
+  function depthOf(n) { return n.leaf ? 0 : 1 + Math.max(depthOf(n.si), depthOf(n.no)); }
+  function draw() {
+    g.fillStyle = C.screen; g.fillRect(0, 0, W, H);
+    const D = depthOf(tree), dy = Math.min(92, (H - 90) / Math.max(1, D)), y = (d) => 40 + d * dy;
+    const onPath = new Set(path);
+    (function edges(n) {
+      if (n.leaf) return;
+      for (const [ch, lbl, col] of [[n.si, "sí", C.lime], [n.no, "no", C.rose]]) {
+        g.strokeStyle = onPath.has(ch) && onPath.has(n) ? col : rgba(C.muted, .3); g.lineWidth = onPath.has(ch) && onPath.has(n) ? 3 : 1.2;
+        g.beginPath(); g.moveTo(n.x, y(n.d) + 10); g.lineTo(ch.x, y(ch.d) - 10 + (ch.leaf && ch.alt ? 16 : 0)); g.stroke();
+        g.fillStyle = col; g.font = "11px JetBrains Mono, monospace"; g.textAlign = "center"; g.fillText(lbl, (n.x + ch.x) / 2 + (lbl === "sí" ? -8 : 8), (y(n.d) + y(ch.d)) / 2);
+        edges(ch);
+      }
+    })(tree);
+    (function nodes(n) {
+      const isCur = n === cur, yy = y(n.d) + (n.leaf && n.alt ? 16 : 0);
+      if (n.leaf) {
+        const name = n.rows.map(r => r.name).join(" / ") || "¿?";
+        g.font = "11px 'Atkinson Hyperlegible', sans-serif"; const w = Math.max(36, g.measureText(name).width + 10);
+        g.fillStyle = isCur ? C.amber : C.panel; g.strokeStyle = onPath.has(n) ? C.amber : C.line; g.lineWidth = 1.5;
+        g.beginPath(); g.roundRect(n.x - w / 2, yy - 10, w, 22, 6); g.fill(); g.stroke();
+        g.fillStyle = isCur ? "#24170a" : C.fg; g.textAlign = "center"; g.fillText(name, n.x, yy + 5);
+      } else {
+        const lbl = ATTR[n.a].q.replace(/[¿?]/g, "");
+        const short = lbl.length > 18 ? lbl.slice(0, 17) + "…" : lbl;
+        g.font = "11px 'Atkinson Hyperlegible', sans-serif"; const w = Math.max(60, g.measureText(short).width + 14);
+        g.fillStyle = isCur ? C.cyan : onPath.has(n) ? rgba(C.cyan, .25) : C.panel; g.strokeStyle = C.cyan; g.lineWidth = 1.2;
+        g.beginPath(); g.roundRect(n.x - w / 2, yy - 11, w, 22, 11); g.fill(); g.stroke();
+        g.fillStyle = isCur ? C.screen : C.fg; g.textAlign = "center"; g.fillText(short, n.x, yy + 4);
+        nodes(n.si); nodes(n.no);
+      }
+    })(tree);
+    g.textAlign = "left";
+    g.fillStyle = C.muted; g.font = "12px JetBrains Mono, monospace";
+    g.fillText(`${data.length} animales · ${countNodes(tree)} preguntas en el árbol · profundidad ${D}`, 12, H - 12);
+  }
+  function countNodes(n) { return n.leaf ? 0 : 1 + countNodes(n.si) + countNodes(n.no); }
+  function ui() {
+    const q = $("ar-q"), bx = $("ar-btns"), fm = $("ar-form");
+    fm.hidden = !(phase === "aprender" || phase === "nuevaPregunta");
+    $("ar-np").hidden = phase !== "nuevaPregunta";
+    if (phase === "jugar") { q.textContent = ATTR[cur.a].q; bx.hidden = false; $("ar-si").textContent = "Sí"; $("ar-no").textContent = "No"; }
+    else if (phase === "adivino") { q.textContent = "¿Es " + cur.rows.map(r => r.name).join(" o ") + "?"; bx.hidden = false; $("ar-si").textContent = "¡Sí!"; $("ar-no").textContent = "No"; }
+    else { q.textContent = phase === "aprender" ? "Me rindo. ¿En qué animal pensabas?" : "Necesito una pregunta nueva para distinguirlos."; bx.hidden = true; }
+    $("ar-msg").textContent = msg;
+    if (phase === "aprender" && !fm.dataset.lleno) { renderChecks(respuestas()); fm.dataset.lleno = "1"; }
+    if (phase !== "aprender" && phase !== "nuevaPregunta") delete fm.dataset.lleno;
+    gainChart();
+  }
+  function renderChecks(v) {
+    const box = $("ar-checks"); box.innerHTML = "";
+    ATTR.forEach((a, i) => {
+      const l = document.createElement("label"); l.className = "chk";
+      const c = document.createElement("input"); c.type = "checkbox"; c.checked = !!v[i]; c.dataset.i = i;
+      l.append(c, document.createTextNode(" " + a.q)); box.append(l);
+    });
+  }
+  function readChecks() { const v = Array(ATTR.length).fill(0); $("ar-checks").querySelectorAll("input").forEach(c => v[+c.dataset.i] = c.checked ? 1 : 0); return v; }
+  function answer(yes) {
+    if (phase === "jugar") {
+      cur = yes ? cur.si : cur.no; path.push(cur);
+      if (cur.leaf) { if (cur.rows.length) { phase = "adivino"; } else { phase = "aprender"; msg = "Llegué a una hoja vacía: no conozco ningún animal así."; } }
+    } else if (phase === "adivino") {
+      if (yes) { msg = "¡Adiviné en " + (path.length - 1) + " preguntas!"; phase = "fin"; $("ar-q").textContent = "¡Lo adiviné!"; $("ar-btns").hidden = true; ui(); $("ar-q").textContent = "¡Lo adiviné!"; $("ar-btns").hidden = true; return; }
+      phase = "aprender"; msg = "Enséñame: escribe el animal. Las respuestas que diste ya están marcadas.";
+    }
+    ui();
+  }
+  function respuestas() { const v = Array(ATTR.length).fill(0); for (let i = 0; i < path.length - 1; i++) v[path[i].a] = path[i + 1] === path[i].si ? 1 : 0; return v; }
+  $("ar-si").addEventListener("click", () => answer(true));
+  $("ar-no").addEventListener("click", () => answer(false));
+  $("ar-add").addEventListener("click", () => {
+    const name = $("ar-name").value.trim().toLowerCase(); if (!name) return;
+    const v = readChecks();
+    const twin = data.find(r => r.v.every((x, i) => x === v[i]) && r.name !== name);
+    if (phase === "aprender" && twin) {
+      phase = "nuevaPregunta"; msg = `“${name}” responde igual que “${twin.name}”. Escribe una pregunta que sea Sí para ${name} y No para ${twin.name}.`;
+      $("ar-np").dataset.twin = twin.name; ui(); return;
+    }
+    if (phase === "nuevaPregunta") {
+      const qtxt = $("ar-newq").value.trim(); if (!qtxt) return;
+      ATTR.push({ k: "p" + ATTR.length, q: qtxt.endsWith("?") ? (qtxt.startsWith("¿") ? qtxt : "¿" + qtxt) : "¿" + qtxt.replace(/^¿/, "") + "?" });
+      data.forEach(r => r.v.push(0)); v.push(1);
+    }
+    data = data.filter(r => r.name !== name); data.push({ name, v });
+    $("ar-name").value = ""; $("ar-newq").value = "";
+    retrain(); msg = `Aprendí “${name}”. El árbol se volvió a calcular: mira cómo cambió.`; ui();
+  });
+  $("ar-restart").addEventListener("click", start);
+  $("ar-reset").addEventListener("click", () => { ATTR = ATTR.slice(0, 8); reset(); });
+  function gainChart() {
+    const c = $("ar-gain"), q = c.getContext("2d"), w = c.width, h = c.height;
+    q.fillStyle = C.screen; q.fillRect(0, 0, w, h);
+    const rows = rowsAt(tree, cur), gs = ATTR.map((a, i) => ({ i, q: a.q, v: gain(rows, i) })).sort((a, b) => b.v - a.v).slice(0, 6);
+    const mx = Math.max(0.01, ...gs.map(x => x.v));
+    q.font = "12px JetBrains Mono, monospace"; q.fillStyle = C.muted; q.fillText("Ganancia de información (aquí)", 8, 16);
+    gs.forEach((x, k) => {
+      const yy = 30 + k * 22; q.fillStyle = C.fg; q.font = "11px 'Atkinson Hyperlegible', sans-serif";
+      q.fillText(x.q.replace(/[¿?]/g, "").slice(0, 26), 8, yy + 11);
+      q.fillStyle = cur && !cur.leaf && x.i === cur.a ? C.cyan : rgba(C.cyan, .35); q.fillRect(190, yy, (w - 240) * x.v / mx, 14);
+      q.fillStyle = C.muted; q.fillText(x.v.toFixed(2), w - 42, yy + 11);
+    });
+  }
+  function rowsAt(n, target) { // animales que llegan al nodo actual
+    let rows = data; for (let i = 0; i < path.length - 1; i++) { const p = path[i]; rows = rows.filter(r => !!r.v[p.a] === (path[i + 1] === p.si)); } return rows;
+  }
+  reset();
+  DEMOS.arbol = { tick: draw };
+})();
+
+// ===================== 3 · APRENDIZAJE POR REFUERZO (Q-learning) =====================
+(function () {
+  const COLS = 12, ROWS = 8, S = 70;
+  const cv = $("rl-cv"), g = cv.getContext("2d");
+  const START = [0, 7], GOAL = [11, 0];
+  const ACTS = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // arriba, derecha, abajo, izquierda
+  let holes, walls, Q, agent, ep = 0, steps = 0, ret = 0, wins = 0, returns = [], raw = [], trail = [];
+  let playing = false, greedy = false, eps = .2, alpha = .5, gamma = .9, speed = 20, acc = 0, t = 0;
+  const k = (x, y) => y * COLS + x;
+
+  function resetWorld() {
+    holes = new Set([k(3, 7), k(3, 6), k(4, 3), k(5, 3), k(6, 3), k(8, 5), k(8, 6), k(9, 1), k(10, 2), k(1, 2)]);
+    walls = new Set([k(6, 6), k(6, 7), k(6, 5), k(2, 4), k(3, 4), k(9, 4), k(10, 4)]);
+  }
+  function resetQ() { Q = Array.from({ length: COLS * ROWS }, () => [0, 0, 0, 0]); ep = 0; wins = 0; returns = []; raw = []; newEpisode(); }
+  function newEpisode() { agent = START.slice(); steps = 0; ret = 0; trail = [agent.slice()]; }
+  function choose(s) {
+    if (!greedy && Math.random() < eps) return Math.floor(Math.random() * 4);
+    const q = Q[s], m = Math.max(...q), best = [0, 1, 2, 3].filter(a => q[a] === m);
+    return best[Math.floor(Math.random() * best.length)];
+  }
+  function step() {
+    const s = k(agent[0], agent[1]), a = choose(s);
+    let nx = agent[0] + ACTS[a][0], ny = agent[1] + ACTS[a][1];
+    if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS || walls.has(k(nx, ny))) { nx = agent[0]; ny = agent[1]; }
+    const s2 = k(nx, ny); let r = -0.1, done = false;
+    if (nx === GOAL[0] && ny === GOAL[1]) { r = 10; done = true; }
+    else if (holes.has(s2)) { r = -10; done = true; }
+    // La fórmula de Q-learning
+    const target = done ? r : r + gamma * Math.max(...Q[s2]);
+    Q[s][a] += alpha * (target - Q[s][a]);
+    agent = [nx, ny]; trail.push(agent.slice()); steps++; ret += r;
+    if (done || steps >= 150) {
+      ep++; if (r === 10) wins++; raw.push(ret); if (raw.length > 20) raw.shift(); returns.push(raw.reduce((a, v) => a + v, 0) / raw.length); if (returns.length > 300) returns.shift();
+      lineChart($("rl-chart"), returns, { title: "Puntos por episodio (promedio de 20 · sube cuando aprende)", color: C.lime });
+      newEpisode();
+    }
+  }
+  function hud() { $("rl-ep").textContent = ep; $("rl-steps").textContent = steps; $("rl-ret").textContent = ret.toFixed(1); $("rl-wins").textContent = wins; }
+
+  function draw() {
+    g.fillStyle = C.screen; g.fillRect(0, 0, cv.width, cv.height);
+    let maxAbs = 0.5; for (const q of Q) for (const v of q) maxAbs = Math.max(maxAbs, Math.abs(v));
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+      const X = x * S, Y = y * S, id = k(x, y);
+      if (walls.has(id)) { g.fillStyle = C.line; g.fillRect(X, Y, S, S); g.strokeStyle = rgba(C.violet, .35); g.strokeRect(X + 5, Y + 5, S - 10, S - 10); continue; }
+      if (holes.has(id)) { g.fillStyle = "#07060f"; g.fillRect(X + 2, Y + 2, S - 4, S - 4); g.fillStyle = C.rose; g.font = "13px 'Press Start 2P', monospace"; g.textAlign = "center"; g.fillText("−10", X + S / 2, Y + S / 2 + 6); continue; }
+      if (x === GOAL[0] && y === GOAL[1]) {
+        g.fillStyle = rgba(C.lime, .2); g.fillRect(X + 2, Y + 2, S - 4, S - 4);
+        g.save(); g.translate(X + S / 2, Y + S / 2 - 4); g.rotate(-0.4); g.fillStyle = C.amber; g.beginPath(); g.ellipse(0, 0, 9, 20, 0, 0, 7); g.fill();
+        g.fillStyle = C.lime; g.beginPath(); g.ellipse(-8, 10, 4, 14, 0.5, 0, 7); g.ellipse(8, 10, 4, 14, -0.5, 0, 7); g.fill(); g.restore();
+        g.fillStyle = C.lime; g.font = "11px 'Press Start 2P', monospace"; g.textAlign = "center"; g.fillText("+10", X + S / 2, Y + S - 6); continue;
+      }
+      const q = Q[id], cx = X + S / 2, cy = Y + S / 2;
+      const tri = [[[X, Y], [X + S, Y]], [[X + S, Y], [X + S, Y + S]], [[X + S, Y + S], [X, Y + S]], [[X, Y + S], [X, Y]]];
+      for (let a = 0; a < 4; a++) {
+        const v = q[a] / maxAbs;
+        g.fillStyle = v >= 0 ? rgba(C.lime, Math.min(.85, Math.abs(v))) : rgba(C.rose, Math.min(.85, Math.abs(v)));
+        g.beginPath(); g.moveTo(cx, cy); g.lineTo(...tri[a][0]); g.lineTo(...tri[a][1]); g.closePath(); g.fill();
+      }
+      g.strokeStyle = rgba(C.muted, .15); g.lineWidth = 1; g.strokeRect(X + .5, Y + .5, S - 1, S - 1);
+      const m = Math.max(...q);
+      if (q.some(v => v !== 0)) {
+        const a = q.indexOf(m), [dx, dy] = ACTS[a];
+        g.strokeStyle = C.fg; g.lineWidth = 2.5; g.beginPath(); g.moveTo(cx - dx * 12, cy - dy * 12); g.lineTo(cx + dx * 14, cy + dy * 14); g.stroke();
+        g.beginPath(); g.moveTo(cx + dx * 14, cy + dy * 14); g.lineTo(cx + dx * 6 - dy * 6, cy + dy * 6 + dx * 6); g.lineTo(cx + dx * 6 + dy * 6, cy + dy * 6 - dx * 6); g.closePath(); g.fillStyle = C.fg; g.fill();
+      }
+      if (x === START[0] && y === START[1]) { g.fillStyle = C.cyan; g.font = "10px 'Press Start 2P', monospace"; g.textAlign = "left"; g.fillText("INICIO", X + 4, Y + 14); }
+    }
+    // rastro y agente
+    g.strokeStyle = rgba(C.cyan, .5); g.lineWidth = 3; g.beginPath();
+    trail.slice(-40).forEach(([x, y], i) => i ? g.lineTo(x * S + S / 2, y * S + S / 2) : g.moveTo(x * S + S / 2, y * S + S / 2)); g.stroke();
+    const ax = agent[0] * S + S / 2, ay = agent[1] * S + S / 2;
+    g.fillStyle = C.cyan; g.beginPath(); g.roundRect(ax - 16, ay - 14, 32, 28, 7); g.fill();
+    g.fillStyle = C.screen; g.beginPath(); g.arc(ax - 7, ay - 2, 4, 0, 7); g.arc(ax + 7, ay - 2, 4, 0, 7); g.fill();
+    g.strokeStyle = C.cyan; g.lineWidth = 2; g.beginPath(); g.moveTo(ax, ay - 14); g.lineTo(ax, ay - 22); g.stroke(); g.beginPath(); g.arc(ax, ay - 24, 3, 0, 7); g.fillStyle = C.amber; g.fill();
+    g.textAlign = "left";
+  }
+  function tick(dt) {
+    t += dt;
+    if (playing) { acc += dt * speed; let n = 0; while (acc >= 1 && n < 2000) { step(); acc -= 1; n++; } hud(); }
+    draw();
+  }
+  cv.addEventListener("pointerdown", (e) => {
+    const p = canvasPos(cv, e), x = Math.floor(p.x / S), y = Math.floor(p.y / S), id = k(x, y);
+    if ((x === START[0] && y === START[1]) || (x === GOAL[0] && y === GOAL[1]) || walls.has(id)) return;
+    holes.has(id) ? holes.delete(id) : holes.add(id);
+  });
+  $("rl-play").addEventListener("click", () => { playing = !playing; $("rl-play").textContent = playing ? "Pausa" : "Entrenar"; });
+  $("rl-step").addEventListener("click", () => { playing = false; $("rl-play").textContent = "Entrenar"; step(); hud(); });
+  $("rl-reset").addEventListener("click", () => { resetQ(); hud(); lineChart($("rl-chart"), [], { title: "Puntos por episodio" }); });
+  $("rl-greedy").addEventListener("click", (e) => { greedy = !greedy; setPressed(e.currentTarget, greedy); });
+  bindRange("rl-eps", v => (v / 100).toFixed(2), v => eps = v / 100);
+  bindRange("rl-alpha", v => (v / 100).toFixed(2), v => alpha = v / 100);
+  bindRange("rl-gamma", v => (v / 100).toFixed(2), v => gamma = v / 100);
+  bindRange("rl-speed", null, v => speed = v);
+  resetWorld(); resetQ(); hud(); lineChart($("rl-chart"), [], { title: "Puntos por episodio" });
+  DEMOS.refuerzo = { tick };
+})();
+
+// ===================== 4 · NEUROEVOLUCIÓN (pájaros que aprenden a volar) =====================
+(function () {
+  const cv = $("fl-cv"), g = cv.getContext("2d"), W = cv.width, H = cv.height;
+  const POP = 60, NI = 4, NH = 6, BX = 170, GRAV = 1500, FLAP = -430, PW = 74, GAP = 165, SPACING = 290, VX = 190, DT = 1 / 60;
+  const NW = NI * NH + NH + NH + 1;
+  let birds, pipes, gen = 1, best = 0, history = [], playing = true, speed = 1, mut = .1, human = false, hb = null, hDead = false, t = 0, scroll = 0;
+
+  const randn = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  function brainRandom() { return Array.from({ length: NW }, () => randn()); }
+  function forward(w, x) {
+    const h = []; let i = 0;
+    for (let j = 0; j < NH; j++) { let s = 0; for (let k = 0; k < NI; k++) s += x[k] * w[i++]; s += w[i++]; h.push(Math.tanh(s)); }
+    let o = 0; for (let j = 0; j < NH; j++) o += h[j] * w[i++]; o += w[i++];
+    return { h, o: 1 / (1 + Math.exp(-o)) };
+  }
+  function newBird(w) { return { y: H / 2, vy: 0, alive: true, fit: 0, pipes: 0, w, act: null, inp: [0, 0, 0, 0], col: `hsl(${Math.floor(Math.random() * 360)},80%,65%)` }; }
+  function newPipes() { pipes = []; for (let i = 0; i < 4; i++) addPipe(W + 120 + i * SPACING); }
+  function addPipe(x) { pipes.push({ x, gy: rnd(110, H - 110), passed: new Set() }); }
+  function resetAll() { gen = 1; best = 0; history = []; birds = Array.from({ length: POP }, () => newBird(brainRandom())); newPipes(); lineChart($("fl-chart"), [], { title: "Récord de tubos por generación" }); hud(); }
+
+  function nextGen() {
+    const sorted = birds.slice().sort((a, b) => b.fit - a.fit);
+    history.push(Math.max(...birds.map(b => b.pipes))); if (history.length > 200) history.shift();
+    lineChart($("fl-chart"), history, { title: "Tubos que pasó el mejor pájaro en cada generación", color: C.lime, min: 0 });
+    const parents = sorted.slice(0, Math.max(4, Math.floor(POP * 0.2)));
+    const total = parents.reduce((s, b) => s + b.fit * b.fit, 0);
+    const pick = () => { let r = Math.random() * total; for (const p of parents) { r -= p.fit * p.fit; if (r <= 0) return p; } return parents[0]; };
+    const kids = [newBird(sorted[0].w.slice()), newBird(sorted[1].w.slice())];
+    while (kids.length < POP) {
+      const a = pick(), b = pick();
+      const w = a.w.map((v, i) => (Math.random() < .5 ? v : b.w[i]) + (Math.random() < mut ? randn() * .6 : 0));
+      kids.push(newBird(w));
+    }
+    kids[0].col = C.amber; birds = kids; gen++; newPipes(); hud();
+  }
+  function nextPipe(x) { return pipes.find(p => p.x + PW > x - 14); }
+  function physics(b, flap) {
+    if (flap) b.vy = FLAP;
+    b.vy += GRAV * DT; b.y += b.vy * DT;
+    const p = nextPipe(BX);
+    if (b.y < 12 || b.y > H - 12) b.alive = false;
+    if (p && BX + 12 > p.x && BX - 12 < p.x + PW && (b.y - 12 < p.gy - GAP / 2 || b.y + 12 > p.gy + GAP / 2)) b.alive = false;
+    for (const q of pipes) if (!q.passed.has(b) && q.x + PW < BX - 12) { q.passed.add(b); b.pipes++; }
+  }
+  function update() {
+    for (const p of pipes) p.x -= VX * DT; scroll += VX * DT;
+    if (pipes[0].x < -PW - 10) { pipes.shift(); addPipe(pipes[pipes.length - 1].x + SPACING); }
+    if (human) {
+      if (hb && hb.alive) { physics(hb, hb.flapNow); hb.flapNow = false; hb.fit++; }
+      return;
+    }
+    let alive = 0;
+    for (const b of birds) {
+      if (!b.alive) continue;
+      const p = nextPipe(BX);
+      b.inp = [b.y / H, b.vy / 600, (p.x - BX) / W, (p.gy - b.y) / H];
+      b.act = forward(b.w, b.inp);
+      physics(b, b.act.o > .5);
+      if (b.alive) { b.fit++; alive++; }
+    }
+    const cur = Math.max(...birds.map(b => b.pipes)); if (cur > best) best = cur;
+    if (!alive) nextGen();
+  }
+  function hud() {
+    $("fl-gen").textContent = human ? "—" : gen;
+    $("fl-alive").textContent = human ? (hb && hb.alive ? 1 : 0) : birds.filter(b => b.alive).length;
+    $("fl-pop").textContent = human ? 1 : POP;
+    $("fl-score").textContent = human ? (hb ? hb.pipes : 0) : Math.max(...birds.map(b => b.pipes));
+    $("fl-best").textContent = best;
+  }
+  function drawBird(x, y, vy, col, a = 1) {
+    g.globalAlpha = a; g.save(); g.translate(x, y); g.rotate(clamp(vy / 700, -.6, .9));
+    g.fillStyle = col; g.beginPath(); g.ellipse(0, 0, 15, 12, 0, 0, 7); g.fill();
+    g.fillStyle = "#fff"; g.beginPath(); g.arc(6, -4, 4.5, 0, 7); g.fill(); g.fillStyle = "#111"; g.beginPath(); g.arc(7.5, -4, 2, 0, 7); g.fill();
+    g.fillStyle = C.amber; g.beginPath(); g.moveTo(12, 1); g.lineTo(21, 4); g.lineTo(12, 7); g.fill(); g.restore(); g.globalAlpha = 1;
+  }
+  function draw() {
+    const grad = g.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, "#1b1840"); grad.addColorStop(1, "#0c0b1c");
+    g.fillStyle = grad; g.fillRect(0, 0, W, H);
+    g.fillStyle = rgba(C.muted, .25); for (let i = 0; i < 40; i++) { const sx = ((i * 137 - scroll * .2) % W + W) % W, sy = (i * 71) % (H - 80); g.fillRect(sx, sy, 2, 2); }
+    for (const p of pipes) {
+      g.fillStyle = "#2f7d4f"; g.fillRect(p.x, 0, PW, p.gy - GAP / 2); g.fillRect(p.x, p.gy + GAP / 2, PW, H);
+      g.fillStyle = C.lime; g.fillRect(p.x - 5, p.gy - GAP / 2 - 18, PW + 10, 18); g.fillRect(p.x - 5, p.gy + GAP / 2, PW + 10, 18);
+    }
+    if (human) {
+      if (hb) drawBird(BX, hb.y, hb.vy, C.cyan);
+      g.fillStyle = C.fg; g.font = "14px 'Press Start 2P', monospace"; g.textAlign = "center";
+      if (!hb || !hb.alive) g.fillText("ESPACIO O TOCA PARA VOLAR", W / 2, H / 2);
+      g.textAlign = "left"; return;
+    }
+    let lead = null;
+    for (const b of birds) if (b.alive) { drawBird(BX, b.y, b.vy, b.col, .55); if (!lead || b.fit > lead.fit || (b.fit === lead.fit && b === birds[0])) lead = b; }
+    const elite = birds[0].alive ? birds[0] : lead;
+    if (elite) { drawBird(BX, elite.y, elite.vy, C.amber, 1); g.strokeStyle = C.amber; g.lineWidth = 2; g.beginPath(); g.arc(BX, elite.y, 22, 0, 7); g.stroke(); }
+    // Línea de lo que "ve" el mejor pájaro
+    const p = nextPipe(BX);
+    if (elite && p) { g.setLineDash([4, 5]); g.strokeStyle = rgba(C.cyan, .8); g.lineWidth = 1.5; g.beginPath(); g.moveTo(BX, elite.y); g.lineTo(p.x, p.gy); g.stroke(); g.setLineDash([]); g.fillStyle = C.cyan; g.beginPath(); g.arc(p.x, p.gy, 5, 0, 7); g.fill(); }
+    g.fillStyle = C.fg; g.font = "13px 'Press Start 2P', monospace"; g.fillText(`GEN ${gen}`, 14, 28);
+    drawNet(elite);
+  }
+  function drawNet(b) {
+    const nc = $("fl-net"), q = nc.getContext("2d"), NWd = nc.width, NHt = nc.height;
+    q.fillStyle = C.screen; q.fillRect(0, 0, NWd, NHt);
+    if (!b || !b.act) return;
+    const xs = [112, NWd / 2 + 10, NWd - 96], names = ["altura", "velocidad", "dist. tubo", "al hueco"];
+    const pos = (l, i, n) => [xs[l], NHt / 2 + (i - (n - 1) / 2) * (NHt - 50) / Math.max(1, n - 1)];
+    let w = b.w, k = 0;
+    for (let j = 0; j < NH; j++) { for (let i = 0; i < NI; i++) { line(q, pos(0, i, NI), pos(1, j, NH), w[k++]); } k++; }
+    for (let j = 0; j < NH; j++) line(q, pos(1, j, NH), pos(2, 0, 1), w[k++]);
+    const node = (p, v, lbl, right) => {
+      q.fillStyle = mix("#2a2552", v >= 0 ? C.amber : C.cyan, Math.min(1, Math.abs(v)));
+      q.beginPath(); q.arc(p[0], p[1], 13, 0, 7); q.fill(); q.strokeStyle = C.fg; q.lineWidth = 1; q.stroke();
+      if (lbl) { q.fillStyle = C.muted; q.font = "14px JetBrains Mono, monospace"; q.textAlign = right ? "left" : "right"; q.fillText(lbl, p[0] + (right ? 22 : -22), p[1] + 4); }
+    };
+    b.inp.forEach((v, i) => node(pos(0, i, NI), v, names[i]));
+    b.act.h.forEach((v, j) => node(pos(1, j, NH), v));
+    node(pos(2, 0, 1), b.act.o * 2 - 1, b.act.o > .5 ? "¡ALETEA!" : "espera", true);
+    q.textAlign = "left";
+  }
+  function line(q, a, b, w) {
+    q.strokeStyle = w >= 0 ? rgba(C.lime, Math.min(.9, .15 + Math.abs(w) / 3)) : rgba(C.rose, Math.min(.9, .15 + Math.abs(w) / 3));
+    q.lineWidth = Math.min(5, .5 + Math.abs(w) * 1.2); q.beginPath(); q.moveTo(a[0], a[1]); q.lineTo(b[0], b[1]); q.stroke();
+  }
+  function tick(dt) {
+    t += dt;
+    if (playing) { const n = human ? 1 : speed; for (let i = 0; i < n; i++) update(); hud(); }
+    draw();
+  }
+  function humanFlap() {
+    if (!human) return;
+    if (!hb || !hb.alive) { hb = newBird(null); newPipes(); }
+    hb.flapNow = true;
+  }
+  window.addEventListener("keydown", (e) => { if (ACTIVE === "flappy" && e.code === "Space") { e.preventDefault(); humanFlap(); } });
+  cv.addEventListener("pointerdown", humanFlap);
+  $("fl-play").addEventListener("click", () => { playing = !playing; $("fl-play").textContent = playing ? "Pausa" : "Continuar"; });
+  $("fl-reset").addEventListener("click", resetAll);
+  $("fl-human").addEventListener("click", (e) => {
+    human = !human; setPressed(e.currentTarget, human); hb = null; newPipes();
+    if (!human) { birds.forEach(b => { b.y = H / 2; b.vy = 0; b.alive = true; b.fit = 0; b.pipes = 0; }); }
+    hud();
+  });
+  bindRange("fl-speed", v => "×" + v, v => speed = v);
+  bindRange("fl-mut", v => v + " %", v => mut = v / 100);
+  resetAll();
+  DEMOS.flappy = { tick };
+})();
+
+// ===================== 5 · RED NEURONAL INTERACTIVA (retropropagación) =====================
+(function () {
+  const cv = $("nn-cv"), g = cv.getContext("2d"), W = cv.width, H = cv.height;
+  let pts = [], net, epoch = 0, losses = [], training = false, lr = .3, nLayers = 1, nNeur = 4, team = 1, dataset = "lineal";
+  const randn = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const toPx = (v) => (v + 1) / 2 * W, toPy = (v) => (1 - (v + 1) / 2) * H;
+
+  function makeData(kind) {
+    pts = []; const N = 140;
+    for (let i = 0; i < N; i++) {
+      let x, y, c;
+      if (kind === "lineal") { c = i % 2; const cx = c ? .45 : -.45; x = cx + randn() * .22; y = cx * .6 + randn() * .22; }
+      else if (kind === "circulo") { c = i % 2; const r = c ? Math.random() * .4 : .62 + Math.random() * .3, a = Math.random() * 7; x = r * Math.cos(a); y = r * Math.sin(a); }
+      else if (kind === "xor") { x = rnd(-.9, .9); y = rnd(-.9, .9); if (Math.abs(x) < .08) x += Math.sign(x || 1) * .1; if (Math.abs(y) < .08) y += Math.sign(y || 1) * .1; c = x * y > 0 ? 1 : 0; }
+      else { c = i % 2; const tt = (Math.floor(i / 2) / (N / 2)) * 3.2 + .3, r = tt / 3.6, a = tt * 2.1 + (c ? Math.PI : 0); x = r * Math.cos(a) + randn() * .03; y = r * Math.sin(a) + randn() * .03; }
+      pts.push({ x: clamp(x, -.98, .98), y: clamp(y, -.98, .98), c });
+    }
+  }
+  function makeNet() {
+    const sizes = [2, ...Array(nLayers).fill(nNeur), 1];
+    net = { sizes, W: [], b: [] };
+    for (let l = 0; l < sizes.length - 1; l++) {
+      net.W.push(Array.from({ length: sizes[l + 1] }, () => Array.from({ length: sizes[l] }, () => randn() * Math.sqrt(1 / sizes[l]))));
+      net.b.push(Array(sizes[l + 1]).fill(0).map(() => randn() * .1));
+    }
+    epoch = 0; losses = []; hud();
+  }
+  function forward(x) {
+    const acts = [x];
+    for (let l = 0; l < net.W.length; l++) {
+      const a = acts[l], last = l === net.W.length - 1;
+      acts.push(net.W[l].map((row, j) => { let z = net.b[l][j]; for (let i = 0; i < row.length; i++) z += row[i] * a[i]; return last ? 1 / (1 + Math.exp(-z)) : Math.tanh(z); }));
+    }
+    return acts;
+  }
+  function trainEpoch() {
+    if (!pts.length) return;
+    const gW = net.W.map(m => m.map(r => r.map(() => 0))), gb = net.b.map(v => v.map(() => 0));
+    let loss = 0, ok = 0;
+    for (const p of pts) {
+      const acts = forward([p.x, p.y]), out = acts[acts.length - 1][0];
+      loss += -(p.c * Math.log(out + 1e-9) + (1 - p.c) * Math.log(1 - out + 1e-9));
+      if ((out > .5 ? 1 : 0) === p.c) ok++;
+      let delta = [out - p.c];
+      for (let l = net.W.length - 1; l >= 0; l--) {
+        const a = acts[l];
+        for (let j = 0; j < delta.length; j++) { gb[l][j] += delta[j]; for (let i = 0; i < a.length; i++) gW[l][j][i] += delta[j] * a[i]; }
+        if (l > 0) delta = a.map((ai, i) => { let s = 0; for (let j = 0; j < delta.length; j++) s += net.W[l][j][i] * delta[j]; return s * (1 - ai * ai); });
+      }
+    }
+    const n = pts.length;
+    for (let l = 0; l < net.W.length; l++) for (let j = 0; j < net.W[l].length; j++) {
+      net.b[l][j] -= lr * gb[l][j] / n;
+      for (let i = 0; i < net.W[l][j].length; i++) net.W[l][j][i] -= lr * gW[l][j][i] / n;
+    }
+    epoch++; losses.push(loss / n); if (losses.length > 400) losses.shift();
+    return ok / n;
+  }
+  let lastAcc = null;
+  function hud() {
+    $("nn-ep").textContent = epoch;
+    $("nn-loss").textContent = losses.length ? losses[losses.length - 1].toFixed(3) : "—";
+    $("nn-acc").textContent = lastAcc === null ? "—" : Math.round(lastAcc * 100) + " %";
+  }
+  function accuracy() { if (!pts.length) return null; let ok = 0; for (const p of pts) { const o = forward([p.x, p.y]).at(-1)[0]; if ((o > .5 ? 1 : 0) === p.c) ok++; } return ok / pts.length; }
+
+  function draw() {
+    const R = 50, cw = W / R;
+    for (let i = 0; i < R; i++) for (let j = 0; j < R; j++) {
+      const x = (i + .5) / R * 2 - 1, y = 1 - (j + .5) / R * 2, o = forward([x, y]).at(-1)[0];
+      g.fillStyle = mix("#164a57", "#6b4614", o); g.fillRect(i * cw, j * cw, cw + 1, cw + 1);
+    }
+    // frontera (0.5)
+    g.strokeStyle = rgba(C.fg, .25); g.lineWidth = 1; g.beginPath(); g.moveTo(W / 2, 0); g.lineTo(W / 2, H); g.moveTo(0, H / 2); g.lineTo(W, H / 2); g.stroke();
+    for (const p of pts) {
+      g.fillStyle = p.c ? C.amber : C.cyan; g.beginPath(); g.arc(toPx(p.x), toPy(p.y), 6, 0, 7); g.fill();
+      g.strokeStyle = "#0c0b1c"; g.lineWidth = 2; g.stroke();
+    }
+    if (!pts.length) { g.fillStyle = C.fg; g.font = "14px 'Press Start 2P', monospace"; g.textAlign = "center"; g.fillText("TOCA PARA AGREGAR PUNTOS", W / 2, H / 2); g.textAlign = "left"; }
+  }
+  function drawNet() {
+    const nc = $("nn-net"), q = nc.getContext("2d"), NWd = nc.width, NHt = nc.height;
+    q.fillStyle = C.screen; q.fillRect(0, 0, NWd, NHt);
+    const L = net.sizes.length, xs = net.sizes.map((_, l) => 40 + l * (NWd - 80) / (L - 1));
+    const pos = (l, i) => { const n = net.sizes[l]; return [xs[l], NHt / 2 + (i - (n - 1) / 2) * Math.min(46, (NHt - 70) / Math.max(1, n - 1))]; };
+    for (let l = 0; l < L - 1; l++) for (let j = 0; j < net.sizes[l + 1]; j++) for (let i = 0; i < net.sizes[l]; i++) {
+      const w = net.W[l][j][i], a = pos(l, i), b = pos(l + 1, j);
+      q.strokeStyle = w >= 0 ? rgba(C.amber, Math.min(.9, .15 + Math.abs(w) / 2.5)) : rgba(C.cyan, Math.min(.9, .15 + Math.abs(w) / 2.5));
+      q.lineWidth = Math.min(5, .4 + Math.abs(w)); q.beginPath(); q.moveTo(a[0], a[1]); q.lineTo(b[0], b[1]); q.stroke();
+    }
+    // Cada neurona muestra en miniatura lo que "ve" en el plano
+    const M = 12, sz = Math.min(36, (NHt - 70) / Math.max(...net.sizes) - 4);
+    for (let l = 0; l < L; l++) for (let i = 0; i < net.sizes[l]; i++) {
+      const [px, py] = pos(l, i);
+      for (let a = 0; a < M; a++) for (let b2 = 0; b2 < M; b2++) {
+        const x = (a + .5) / M * 2 - 1, y = 1 - (b2 + .5) / M * 2, v = forward([x, y])[l][i];
+        const t = l === L - 1 ? v : l === 0 ? (v + 1) / 2 : (v + 1) / 2;
+        q.fillStyle = mix("#164a57", "#6b4614", clamp(t, 0, 1)); q.fillRect(px - sz / 2 + a * sz / M, py - sz / 2 + b2 * sz / M, sz / M + .5, sz / M + .5);
+      }
+      q.strokeStyle = C.fg; q.lineWidth = 1; q.strokeRect(px - sz / 2, py - sz / 2, sz, sz);
+    }
+    q.fillStyle = C.muted; q.font = "15px JetBrains Mono, monospace"; q.textAlign = "center";
+    q.fillText("entradas", xs[0], NHt - 6); q.fillText("salida", xs[L - 1], NHt - 6);
+    if (L > 2) q.fillText(nLayers === 1 ? "oculta" : "ocultas", (xs[1] + xs[L - 2]) / 2, NHt - 6);
+    q.textAlign = "left";
+  }
+  let frame = 0;
+  function tick() {
+    if (training) { let acc; for (let i = 0; i < 6; i++) acc = trainEpoch(); if (acc !== undefined) lastAcc = acc; hud(); }
+    frame++;
+    draw();
+    if (frame % 3 === 0 || training) { drawNet(); if (frame % 6 === 0) lineChart($("nn-chart"), losses, { title: "Error (debe bajar)", color: C.amber, min: 0 }); }
+  }
+  cv.addEventListener("pointerdown", (e) => {
+    const p = canvasPos(cv, e); pts.push({ x: p.x / W * 2 - 1, y: 1 - p.y / H * 2, c: team }); lastAcc = accuracy(); hud();
+  });
+  $("nn-play").addEventListener("click", () => { training = !training; $("nn-play").textContent = training ? "Pausa" : "Entrenar"; });
+  $("nn-reset").addEventListener("click", () => { makeNet(); lastAcc = accuracy(); hud(); });
+  $("nn-clear").addEventListener("click", () => { pts = []; lastAcc = null; hud(); });
+  $("nn-team").addEventListener("click", (e) => { team = 1 - team; e.currentTarget.textContent = "Agregar: " + (team ? "ámbar" : "azul"); setPressed(e.currentTarget, !team); });
+  $("nn-team").textContent = "Agregar: ámbar";
+  $("nn-data").addEventListener("change", (e) => { dataset = e.target.value; makeData(dataset); makeNet(); lastAcc = accuracy(); hud(); });
+  bindRange("nn-layers", null, (v) => { nLayers = v; if (net) { makeNet(); lastAcc = accuracy(); hud(); } });
+  bindRange("nn-neur", null, (v) => { nNeur = v; if (net) { makeNet(); lastAcc = accuracy(); hud(); } });
+  bindRange("nn-lr", (v) => (v / 100).toFixed(2), (v) => lr = v / 100);
+  makeData(dataset); makeNet(); lastAcc = accuracy(); hud(); lineChart($("nn-chart"), [], { title: "Error" });
+  DEMOS.red = { tick };
+})();
+
+// ===================== DIBUJA Y LA IA APRENDE: K VECINOS MÁS CERCANOS =====================
+(function () {
+  const cv = $("kn-cv"), g = cv.getContext("2d"), W = cv.width, H = cv.height;
+  const S = 16, PAD = 30, DW = 400; // lienzo de dibujo de 400x400 en (PAD, 60)
+  const CLASES = [{ k: "circulo", n: "Círculo", c: C.cyan }, { k: "cruz", n: "Cruz", c: C.amber }, { k: "linea", n: "Línea", c: C.lime }];
+  const draw = document.createElement("canvas"); draw.width = DW; draw.height = DW; const dg = draw.getContext("2d");
+  let ejemplos = [], K = 3, drawing = false, last = null, pred = null, clase = 0;
+  function limpiar() { dg.fillStyle = "#000"; dg.fillRect(0, 0, DW, DW); pred = null; }
+  // Convierte un dibujo en 16x16 números (0 a 1), centrado y escalado a su caja: lo que "ve" la computadora
+  function vector(src) {
+    const d = src.getContext("2d").getImageData(0, 0, src.width, src.height).data;
+    let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+    for (let y = 0; y < src.height; y += 2) for (let x = 0; x < src.width; x += 2) if (d[(y * src.width + x) * 4] > 60) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+    const v = new Float32Array(S * S); if (x1 < 0) return v;
+    const side = Math.max(x1 - x0, y1 - y0) + 20, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    const tmp = document.createElement("canvas"); tmp.width = S; tmp.height = S; const tg = tmp.getContext("2d");
+    tg.imageSmoothingEnabled = true; tg.drawImage(src, cx - side / 2, cy - side / 2, side, side, 0, 0, S, S);
+    const t = tg.getImageData(0, 0, S, S).data;
+    for (let i = 0; i < S * S; i++) v[i] = t[i * 4] / 255;
+    return v;
+  }
+  function dist(a, b) { let s = 0; for (let i = 0; i < a.length; i++) { const d = a[i] - b[i]; s += d * d; } return Math.sqrt(s); }
+  // Ejemplos iniciales hechos con trazos al azar (para no empezar en blanco)
+  function sintetico(k) {
+    const c = document.createElement("canvas"); c.width = DW; c.height = DW; const q = c.getContext("2d");
+    q.fillStyle = "#000"; q.fillRect(0, 0, DW, DW); q.strokeStyle = "#fff"; q.lineWidth = rnd(14, 26); q.lineCap = "round";
+    const cx = rnd(150, 250), cy = rnd(150, 250), r = rnd(70, 140), rot = rnd(-0.5, 0.5);
+    q.beginPath();
+    if (k === "circulo") { q.ellipse(cx, cy, r, r * rnd(0.75, 1.1), rot, 0, Math.PI * 2); }
+    else if (k === "cruz") { const a = rot; for (const s of [1, -1]) { q.moveTo(cx - r * Math.cos(a + s * .8), cy - r * Math.sin(a + s * .8)); q.lineTo(cx + r * Math.cos(a + s * .8), cy + r * Math.sin(a + s * .8)); } }
+    else { const a = rnd(-1.3, 1.3); q.moveTo(cx - r * Math.cos(a), cy - r * Math.sin(a)); q.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a)); }
+    q.stroke(); return c;
+  }
+  function semillas() { ejemplos = []; for (const cl of CLASES) for (let i = 0; i < 5; i++) ejemplos.push({ k: cl.k, v: vector(sintetico(cl.k)), propio: false }); }
+  function predecir() {
+    const v = vector(draw); if (!v.some(x => x > 0)) { pred = null; return; }
+    const ds = ejemplos.map(e => ({ e, d: dist(v, e.v) })).sort((a, b) => a.d - b.d).slice(0, K);
+    const votos = {}; ds.forEach(x => votos[x.e.k] = (votos[x.e.k] || 0) + 1);
+    const gana = Object.keys(votos).sort((a, b) => votos[b] - votos[a])[0];
+    pred = { v, ds, votos, gana };
+  }
+  function grid(v, x, y, cell, col) {
+    for (let i = 0; i < S * S; i++) { const gx = i % S, gy = Math.floor(i / S); g.fillStyle = mix("#0c0b1c", col, v[i]); g.fillRect(x + gx * cell, y + gy * cell, cell - 0.5, cell - 0.5); }
+  }
+  function render() {
+    g.fillStyle = C.screen; g.fillRect(0, 0, W, H);
+    g.font = "13px 'Press Start 2P', monospace"; g.fillStyle = C.fg; g.fillText("DIBUJA AQUÍ", PAD, 40);
+    g.drawImage(draw, PAD, 60); g.strokeStyle = C.line; g.lineWidth = 2; g.strokeRect(PAD, 60, DW, DW);
+    const v = pred ? pred.v : vector(draw);
+    const RX = PAD + DW + 30;
+    g.fillStyle = C.cyan; g.font = "12px 'Press Start 2P', monospace"; g.fillText("LO QUE VE LA IA", RX, 40);
+    grid(v, RX, 60, 9, C.fg);
+    g.fillStyle = C.muted; g.font = "12px JetBrains Mono, monospace"; g.fillText("16 × 16 = 256 números", RX, 220);
+    g.fillText("de 0 (negro) a 1 (blanco)", RX, 238);
+    if (pred) {
+      g.fillStyle = C.cyan; g.font = "12px 'Press Start 2P', monospace"; g.fillText(`${K} VECINOS MÁS CERCANOS`, RX, 280);
+      pred.ds.forEach((x, i) => {
+        const yy = 296 + i * 52, cl = CLASES.find(c => c.k === x.e.k);
+        grid(x.e.v, RX, yy, 2.8, cl.c);
+        g.fillStyle = cl.c; g.font = "14px 'Atkinson Hyperlegible', sans-serif"; g.fillText(cl.n, RX + 56, yy + 18);
+        g.fillStyle = C.muted; g.font = "12px JetBrains Mono, monospace"; g.fillText("distancia " + x.d.toFixed(2), RX + 56, yy + 36);
+        if (yy > H - 60) return;
+      });
+      const cl = CLASES.find(c => c.k === pred.gana);
+      g.fillStyle = cl.c; g.font = "16px 'Press Start 2P', monospace"; g.fillText("CREO QUE ES:", PAD, 500);
+      g.font = "22px 'Press Start 2P', monospace"; g.fillText(cl.n.toUpperCase(), PAD, 536);
+      g.fillStyle = C.muted; g.font = "13px JetBrains Mono, monospace";
+      g.fillText("votos: " + CLASES.map(c => `${c.n} ${pred.votos[c.k] || 0}`).join(" · "), PAD, 562);
+    } else {
+      g.fillStyle = C.muted; g.font = "15px 'Atkinson Hyperlegible', sans-serif";
+      g.fillText("Dibuja un círculo, una cruz o una línea y presiona “¿Qué es?”", PAD, 510);
+    }
+    $("kn-n").textContent = ejemplos.length;
+    $("kn-prop").textContent = ejemplos.filter(e => e.propio).length;
+  }
+  function pos(e) { const p = canvasPos(cv, e); return { x: p.x - PAD, y: p.y - 60 }; }
+  cv.addEventListener("pointerdown", (e) => { const p = pos(e); if (p.x < 0 || p.y < 0 || p.x > DW || p.y > DW) return; drawing = true; last = p; cv.setPointerCapture(e.pointerId); pred = null; });
+  cv.addEventListener("pointermove", (e) => {
+    if (!drawing) return; const p = pos(e);
+    dg.strokeStyle = "#fff"; dg.lineWidth = 20; dg.lineCap = "round"; dg.beginPath(); dg.moveTo(last.x, last.y); dg.lineTo(p.x, p.y); dg.stroke(); last = p;
+  });
+  cv.addEventListener("pointerup", () => drawing = false);
+  $("kn-pred").addEventListener("click", predecir);
+  $("kn-clear").addEventListener("click", limpiar);
+  $("kn-teach").addEventListener("click", () => {
+    const v = vector(draw); if (!v.some(x => x > 0)) return;
+    ejemplos.push({ k: CLASES[clase].k, v, propio: true }); limpiar();
+  });
+  $("kn-class").addEventListener("change", (e) => clase = +e.target.value);
+  $("kn-reset").addEventListener("click", () => { semillas(); limpiar(); });
+  bindRange("kn-k", null, (v) => { K = v; if (pred) predecir(); });
+  semillas(); limpiar();
+  DEMOS.dibujo = { tick: render };
+})();
+
+// ===================== PREDICE LA SIGUIENTE PALABRA: UN MINI MODELO DE LENGUAJE =====================
+(function () {
+  const BASE = `en la huasteca se siembra maíz de muchos colores .
+en la huasteca se come zacahuil en las fiestas .
+en la huasteca se come bocoles con frijol .
+el maíz morado se usa para el atole .
+el maíz blanco se usa para las tortillas .
+el maíz amarillo se usa para los tamales .
+el maíz rojo se guarda para la siguiente siembra .
+la familia escoge las mejores mazorcas para la semilla .
+la familia siembra la milpa cuando empiezan las lluvias .
+la milpa tiene maíz , frijol y calabaza .
+la lluvia llega en junio y la siembra empieza .
+el dron vuela sobre la parcela y toma fotos .
+el dron mide el color de las plantas .
+la computadora aprende con los datos del campo .
+la computadora aprende a jugar con muchas partidas .
+la inteligencia artificial aprende con ejemplos .
+la inteligencia artificial aprende de sus errores .
+la inteligencia artificial ayuda a cuidar el maíz nativo .
+el robot aprende a llegar a la mazorca .
+el robot aprende a evitar los hoyos .
+el jugador gana la partida con paciencia .
+el jugador pierde la partida y vuelve a intentar .
+el enemigo busca el camino más corto .
+el enemigo persigue al jugador por el laberinto .
+la red neuronal aprende a separar los puntos .
+la red neuronal ajusta sus pesos poco a poco .
+los estudiantes aprenden a programar en el tecnológico .
+los estudiantes juegan en el arcade de la charla .
+los estudiantes del cbtis preguntan cómo funciona la inteligencia artificial .
+el técnico visita la parcela y mide las mazorcas .
+el técnico toma fotos del grano con una regla .
+la plataforma guarda los datos de cada semilla .
+la plataforma muestra un mapa de las comunidades .
+el satélite toma fotos de la huasteca cada cinco días .
+la abuela cuenta la historia del maíz morado .
+la abuela guarda la semilla en un lugar seco .
+en ciudad valles hace calor en mayo .
+en xilitla llueve mucho en septiembre .
+el gato se juega en un tablero de tres por tres .
+la máquina imagina todas las partidas posibles .
+el pájaro aprende a volar entre los tubos .
+cada generación vuela mejor que la anterior .`;
+  let ord = 2, temp = 1, frase = [], tablas = null, corpus = BASE;
+  const tok = (t) => t.toLowerCase().replace(/[^\p{L}\p{N}\s.,]/gu, " ").replace(/([.,])/g, " $1 ").split(/\s+/).filter(Boolean);
+  function entrenar() {
+    const w = tok(corpus); tablas = { 1: {}, 2: {} };
+    for (let i = 0; i < w.length - 1; i++) {
+      const a = w[i], b = w[i + 1]; (tablas[1][a] ||= {})[b] = (tablas[1][a][b] || 0) + 1;
+      if (i < w.length - 2) { const k = a + " " + b, c = w[i + 2]; (tablas[2][k] ||= {})[c] = (tablas[2][k][c] || 0) + 1; }
+    }
+    $("tx-stats").textContent = `${w.length} palabras leídas · ${Object.keys(tablas[1]).length} palabras distintas`;
+  }
+  function opciones() {
+    const n = frase.length; let m = null, ctx = "";
+    if (ord === 2 && n >= 2) { ctx = frase.slice(-2).join(" "); m = tablas[2][ctx]; }
+    if (!m && n >= 1) { ctx = frase[n - 1]; m = tablas[1][ctx]; }
+    if (!m) { ctx = "."; m = tablas[1]["."]; }
+    const tot = Object.values(m).reduce((a, b) => a + b, 0);
+    return { ctx, items: Object.entries(m).map(([w, c]) => ({ w, p: c / tot, c })).sort((a, b) => b.p - a.p) };
+  }
+  function muestrear(items) {
+    const ws = items.map(x => Math.pow(x.p, 1 / Math.max(0.05, temp))), s = ws.reduce((a, b) => a + b, 0);
+    let r = Math.random() * s; for (let i = 0; i < items.length; i++) { r -= ws[i]; if (r <= 0) return items[i].w; } return items[0].w;
+  }
+  function render() {
+    const f = $("tx-frase"); f.innerHTML = "";
+    if (!frase.length) f.innerHTML = '<span class="ph">Toca una palabra de la derecha para empezar…</span>';
+    frase.forEach((w, i) => { const s = document.createElement("span"); s.className = "w" + (i >= frase.length - (ord === 2 ? 2 : 1) ? " ctx" : ""); s.textContent = w; f.append(s); });
+    const { ctx, items } = opciones();
+    $("tx-ctx").textContent = frase.length ? `Después de “${ctx}” la IA vio:` : "Para empezar una frase la IA vio:";
+    const bars = $("tx-bars"); bars.innerHTML = "";
+    items.slice(0, 8).forEach(x => {
+      const b = document.createElement("button"); b.className = "bar";
+      b.innerHTML = `<span class="lbl">${x.w}</span><span class="track"><span class="fill" style="width:${(x.p * 100).toFixed(1)}%"></span></span><span class="pct">${Math.round(x.p * 100)} %</span>`;
+      b.addEventListener("click", () => { frase.push(x.w); render(); });
+      bars.append(b);
+    });
+    if (items.length > 8) { const m = document.createElement("p"); m.className = "more"; m.textContent = `y ${items.length - 8} palabras más con menor probabilidad`; bars.append(m); }
+  }
+  function generar(n) { for (let i = 0; i < n; i++) { const { items } = opciones(); const w = muestrear(items); frase.push(w); if (w === "." && i > 3) break; } render(); }
+  $("tx-gen").addEventListener("click", () => generar(14));
+  $("tx-one").addEventListener("click", () => generar(1));
+  $("tx-clear").addEventListener("click", () => { frase = []; render(); });
+  $("tx-ord").addEventListener("change", (e) => { ord = +e.target.value; render(); });
+  bindRange("tx-temp", v => (v / 10).toFixed(1), v => { temp = v / 10; });
+  $("tx-train").addEventListener("click", () => { const t = $("tx-own").value.trim(); corpus = t ? BASE + "\n" + t : BASE; entrenar(); frase = []; render(); });
+  $("tx-base").addEventListener("click", () => { corpus = BASE; $("tx-own").value = ""; entrenar(); frase = []; render(); });
+  entrenar(); render();
+  DEMOS.texto = { tick: () => { } };
+})();
+
+startArcade();
+
+</script>
+
+</body>
+</html>
