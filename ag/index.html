@@ -1,0 +1,1399 @@
+<title>Arcade de optimización</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Concepto: una máquina de arcade nocturna. El menú es la pantalla de selección de nivel;
+   cada nivel es un gabinete con su pantalla (canvas), su tablero de controles y su marcador. */
+:root{
+  --bg:#0e0820; --bg2:#140b2c; --panel:#1a1033; --panel2:#231546; --line:#3a2a66; --fg:#f4efff; --mute:#a99cd6;
+  --yellow:#ffe14d; --cyan:#3ff0ff; --pink:#ff4fb8; --green:#7dff6a; --orange:#ff9b42;
+  --pixel:"Press Start 2P", ui-monospace, monospace;
+  --body:"Chakra Petch", "IBM Plex Sans", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--fg)}
+body{margin:0;font-family:var(--body);font-size:16px;line-height:1.55;
+  background:radial-gradient(1200px 600px at 50% -10%,#2a1360 0%,transparent 60%),var(--bg)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:var(--cyan)}
+button,select,input[type=number]{font:600 14px var(--body);color:var(--fg);background:var(--panel2);border:2px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--cyan)}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+button.go{background:var(--yellow);border-color:var(--yellow);color:#1d1400}
+input[type=range]{accent-color:var(--pink);width:100%}
+/* portada */
+.hero{padding-block:48px 28px;text-align:center}
+.hero h1{font-family:var(--pixel);font-size:clamp(22px,5vw,48px);line-height:1.35;margin:0;letter-spacing:.02em;
+  color:var(--yellow);text-shadow:0 0 18px rgba(255,225,77,.45),4px 4px 0 #6b2bd9}
+.hero p{max-width:64ch;margin:16px auto 0;color:#ddd5ff;font-size:17px}
+.hero .credit{font-family:var(--mono);font-size:13px;color:var(--mute);margin-top:10px}
+.coin{display:inline-block;margin-top:22px;font-family:var(--pixel);font-size:12px;color:var(--pink);letter-spacing:.08em;animation:blink 1.2s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.coin{animation:none}}
+.menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:18px;margin:26px 0 10px}
+.menu .grp{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:16px}
+.menu h2{font-family:var(--pixel);font-size:12px;color:var(--cyan);margin:0 0 12px;letter-spacing:.06em}
+.menu a{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 6px;border-radius:8px;color:var(--fg);text-decoration:none}
+.menu a:hover{background:var(--panel2)}
+.menu a b{font-family:var(--pixel);font-size:13px;color:var(--yellow);text-align:center}
+.menu a span{font-weight:600}
+.menu a i{font-style:normal;font-family:var(--mono);font-size:12px;color:var(--mute);text-align:right}
+/* niveles */
+.level{margin:42px 0;padding-top:8px;border-top:2px dashed var(--line);scroll-margin-top:12px}
+.lvhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px}
+.lvhead .tag{font-family:var(--pixel);font-size:11px;color:var(--pink);letter-spacing:.06em}
+.lvhead h2{font-family:var(--pixel);font-size:clamp(16px,2.4vw,22px);line-height:1.4;margin:6px 0;color:var(--fg)}
+.lvhead a.top{margin-left:auto;font-family:var(--mono);font-size:12px}
+.lead{max-width:80ch;color:#ddd5ff}
+.cab{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:20px;align-items:start;margin-top:12px}
+@media (max-width:920px){.cab{grid-template-columns:minmax(0,1fr)}}
+.screen{position:relative;border:3px solid #2b1d55;border-radius:14px;overflow:hidden;background:#0b1026;box-shadow:0 0 0 2px #0a0618,0 0 28px rgba(63,240,255,.12)}
+.screen canvas{display:block;width:100%;aspect-ratio:1/1;cursor:crosshair}
+.screen.wide canvas{aspect-ratio:16/10}
+.screen::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0 1px,transparent 1px 3px)}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:14px}
+.panel h3{font-family:var(--pixel);font-size:11px;color:var(--cyan);margin:0 0 10px;letter-spacing:.05em;line-height:1.5}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ctl{display:grid;gap:10px}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:14px;color:var(--mute)}
+.ctl label b{font-family:var(--mono);color:var(--fg)}
+.score{display:flex;flex-wrap:wrap;gap:6px 16px;font-family:var(--mono);font-size:13px;color:var(--mute);margin-top:8px;font-variant-numeric:tabular-nums}
+.score b{color:var(--yellow)}
+.score .fin{color:var(--green)}
+.ask{border-left:4px solid var(--yellow);background:var(--panel2);padding:10px 12px;border-radius:0 8px 8px 0;font-size:15px}
+.ask b{font-family:var(--pixel);font-size:10px;color:var(--yellow);display:block;margin-bottom:6px}
+.info{font-size:14px;max-height:280px;overflow:auto}
+.info .op{display:flex;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:13px}
+.info .op span{color:var(--yellow);font-weight:700;font-family:var(--body)}
+.info code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-radius:4px}
+.info .ok{color:var(--green)} .info .warn{color:var(--pink)}
+table.mini{border-collapse:collapse;font-family:var(--mono);font-size:12.5px;margin:6px 0;font-variant-numeric:tabular-nums}
+table.mini th,table.mini td{border-bottom:1px solid var(--line);padding:3px 7px;text-align:right;white-space:nowrap}
+table.mini th{color:var(--mute);font-weight:400}
+table.mini tr.hl td{color:var(--yellow)}
+.perm{display:inline-flex;gap:2px;flex-wrap:wrap}
+.perm i{font-style:normal;font-family:var(--mono);font-size:12px;min-width:22px;text-align:center;padding:1px 3px;border-radius:4px;background:var(--panel2);border:1px solid var(--line)}
+.pa{color:var(--yellow)} .pb{color:var(--cyan)} .mu{color:var(--pink);text-decoration:underline}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px;margin-top:12px}
+.cards button{padding:6px;display:flex;flex-direction:column;gap:6px;align-items:stretch;text-align:left;font-size:13px}
+.cards button[aria-pressed=true]{border-color:var(--yellow);box-shadow:0 0 0 2px rgba(255,225,77,.25)}
+.cards canvas{width:100%;aspect-ratio:1/1;border-radius:4px;display:block}
+.facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:14px}
+.facts dt{color:var(--mute)} .facts dd{margin:0;font-family:var(--mono);overflow-wrap:anywhere}
+.slice canvas{display:block;width:100%;aspect-ratio:16/7;border-radius:8px;border:2px solid var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--mute)}
+.sw{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+table.data{border-collapse:collapse;font-size:14px;width:100%}
+table.data th,table.data td{border-bottom:1px solid var(--line);padding:4px 6px;text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+table.data th:first-child,table.data td:first-child{text-align:left;font-family:var(--body)}
+footer{margin:50px 0 30px;text-align:center;color:var(--mute);font-size:14px}
+footer b{font-family:var(--pixel);font-size:10px;color:var(--cyan)}
+</style>
+
+<div class="wrap">
+<header class="hero">
+  <h1>ARCADE DE<br>OPTIMIZACIÓN</h1>
+  <p>Siete niveles para ver cómo buscan el óptimo los algoritmos de la Unidad 3: primero las funciones de prueba y sus óptimos; después, problemas de la Huasteca resueltos con algoritmos genéticos, hormigas, enjambres, evolución diferencial y recocido simulado.</p>
+  <div class="credit">Cómputo Suave · Unidad 3: Computación evolutiva · Dr. Alfredo Barrón Rodríguez · TecNM Campus Ciudad Valles</div>
+  <div class="coin">INSERT COIN · ELIGE UN NIVEL</div>
+</header>
+<nav class="menu" aria-label="Niveles">
+  <div class="grp"><h2>FUNCIONES Y ÓPTIMOS</h2>
+    <a href="#funciones"><b>1</b><span>Galería de funciones de prueba</span><i>óptimos globales</i></a>
+    <a href="#laboratorio"><b>2</b><span>Laboratorio: elige función y algoritmo</span><i>11 algoritmos</i></a>
+  </div>
+  <div class="grp"><h2>APLICACIONES EN LA REGIÓN</h2>
+    <a href="#mochila"><b>3</b><span>¿Qué sembrar con 30 unidades de agua?</span><i>AG binario</i></a>
+    <a href="#rutas"><b>4</b><span>Ruta de recolección de caña</span><i>ACO · AG-OX</i></a>
+    <a href="#calibrar"><b>5</b><span>Calibrar la curva de crecimiento del maíz</span><i>DE · PSO</i></a>
+    <a href="#sensores"><b>6</b><span>Dónde poner los sensores de humedad</span><i>PSO</i></a>
+    <a href="#riego"><b>7</b><span>Calendario de riego con agua limitada</span><i>recocido</i></a>
+  </div>
+</nav>
+
+<!-- NIVEL 1 -->
+<section class="level" id="funciones">
+  <div class="lvhead"><span class="tag">NIVEL 1 · FUNCIONES DE PRUEBA</span><a class="top" href="#">↑ menú</a></div>
+  <div class="lvhead"><h2>Galería de funciones y sus óptimos</h2></div>
+  <p class="lead">Las funciones de prueba tienen óptimo conocido: así se puede medir qué tan cerca llega cada algoritmo. Elige una tarjeta, pasa el cursor por el mapa para leer f(x, y) y mueve la rebanada para ver el perfil de la función en una sola variable.</p>
+  <div class="cards" id="fcards"></div>
+  <div class="cab">
+    <div><div class="screen"><canvas id="fcv" aria-label="Mapa de la función seleccionada"></canvas></div>
+      <div class="score" id="fread"><span>Pasa el cursor sobre el mapa</span></div></div>
+    <div class="side">
+      <div class="panel"><h3 id="fname">FUNCIÓN</h3><dl class="facts" id="ffacts"></dl></div>
+      <div class="panel slice"><h3>REBANADA f(x, y = c)</h3><canvas id="scv" aria-label="Perfil de la función a lo largo de x"></canvas>
+        <div class="ctl" style="margin-top:8px"><label for="sy">y = c <b id="syv">0</b></label><input type="range" id="sy" min="0" max="1" step="0.001" value="0.5"></div></div>
+      <div class="ask"><b>PREGUNTA</b>Compara la rebanada de Rastrigin con la de Esfera por y = 0. ¿Cuántos mínimos locales tiene cada perfil? ¿Por qué Schwefel engaña a los métodos que solo miran cerca?</div>
+    </div>
+  </div>
+</section>
+
+<!-- NIVEL 2 -->
+<section class="level" id="laboratorio">
+  <div class="lvhead"><span class="tag">NIVEL 2 · LABORATORIO</span><a class="top" href="#">↑ menú</a></div>
+  <div class="lvhead"><h2>Elige función y algoritmo</h2></div>
+  <p class="lead">Cualquier algoritmo contra cualquier función. En los métodos locales haz clic en el mapa para elegir el punto de partida. El panel describe la última operación con sus números.</p>
+  <div class="cab">
+    <div><div class="screen"><canvas id="lcv" aria-label="Algoritmo corriendo sobre la función"></canvas></div><div class="score" id="lst"></div></div>
+    <div class="side">
+      <div class="panel ctl">
+        <div><label for="lf">Función</label><select id="lf"></select></div>
+        <div><label for="la">Algoritmo</label><select id="la"></select></div>
+        <div class="row"><button class="go" id="lplay">▶ JUGAR</button><button id="lstep">Paso</button><button id="liter">Iteración</button><button id="lreset">Reiniciar</button></div>
+        <div><label for="lsp">Velocidad <b id="lspv">8</b></label><input type="range" id="lsp" min="1" max="40" value="8"></div>
+      </div>
+      <div class="panel info" id="linfo" aria-live="polite"></div>
+      <div class="ask"><b>PREGUNTA</b>En Schwefel, ¿qué algoritmos encuentran la esquina (420.97, 420.97) y cuáles se quedan en el segundo mejor mínimo? Prueba al menos tres semillas cambiando de algoritmo y regresando.</div>
+    </div>
+  </div>
+</section>
+
+<!-- NIVEL 3 -->
+<section class="level" id="mochila">
+  <div class="lvhead"><span class="tag">NIVEL 3 · AG BINARIO</span><a class="top" href="#">↑ menú</a></div>
+  <div class="lvhead"><h2>¿Qué sembrar con el agua disponible?</h2></div>
+  <p class="lead">Un productor decide qué cultivos sembrar; cada uno da una ganancia y consume agua. Cada cromosoma tiene un bit por cultivo (1 = se siembra). La aptitud es la ganancia menos una penalización de 10 por cada unidad de agua excedida. El problema del Bloque 1, ahora con el agua como perilla.</p>
+  <div class="cab">
+    <div><div class="screen wide"><canvas id="mcv" aria-label="Población de cromosomas del AG"></canvas></div><div class="score" id="mst"></div></div>
+    <div class="side">
+      <div class="panel"><h3>CULTIVOS</h3><table class="data" id="mtab"></table></div>
+      <div class="panel ctl">
+        <div><label for="mw">Agua disponible <b id="mwv">30</b></label><input type="range" id="mw" min="8" max="60" value="30"></div>
+        <div class="row"><button class="go" id="mplay">▶ JUGAR</button><button id="mstep">1 generación</button><button id="mreset">Nueva población</button></div>
+      </div>
+      <div class="ask"><b>PREGUNTA</b>Con 30 de agua la caña, que es la que más gana, queda fuera. ¿Con cuánta agua entra al óptimo? ¿Por qué la penalización debe ser mayor que la mejor ganancia por unidad de agua?</div>
+    </div>
+  </div>
+</section>
+
+<!-- NIVEL 4 -->
+<section class="level" id="rutas">
+  <div class="lvhead"><span class="tag">NIVEL 4 · AGENTE VIAJERO</span><a class="top" href="#">↑ menú</a></div>
+  <div class="lvhead"><h2>Ruta de recolección de caña</h2></div>
+  <p class="lead">Un camión sale del ingenio, pasa por todas las parcelas una vez y regresa. Las hormigas refuerzan con feromona las aristas de rutas cortas; el AG cruza rutas con el operador OX. Las parcelas son de ejemplo, en un cuadro de 30 km por lado.</p>
+  <div class="cab">
+    <div><div class="screen"><canvas id="rcv" aria-label="Ruta de recolección"></canvas></div><div class="score" id="rst"></div></div>
+    <div class="side">
+      <div class="panel ctl">
+        <div><label for="ralg">Algoritmo</label><select id="ralg"><option value="aco">Colonia de hormigas (ACO)</option><option value="agperm">AG con cruza OX</option></select></div>
+        <div><label for="rn">Parcelas <b id="rnv">14</b></label><input type="range" id="rn" min="6" max="24" value="14"></div>
+        <div class="row"><button class="go" id="rplay">▶ JUGAR</button><button id="rstep">Paso</button><button id="rreset">Nuevo mapa</button></div>
+      </div>
+      <div class="panel info" id="rinfo" aria-live="polite"></div>
+      <div class="ask"><b>PREGUNTA</b>Compara la ruta final con la del vecino más cercano (siempre ir a la parcela más cercana). ¿Cuántos kilómetros ahorra cada algoritmo? ¿Cuál converge en menos iteraciones?</div>
+    </div>
+  </div>
+</section>
+
+<!-- NIVEL 5 -->
+<section class="level" id="calibrar">
+  <div class="lvhead"><span class="tag">NIVEL 5 · CALIBRACIÓN</span><a class="top" href="#">↑ menú</a></div>
+  <div class="lvhead"><h2>Calibrar la curva de crecimiento del maíz</h2></div>
+  <p class="lead">Mediciones semanales de altura (datos simulados) se ajustan con el modelo logístico h(d) = K / (1 + e<sup>−r(d − d₀)</sup>). El algoritmo busca K, r y d₀ que minimizan la suma de errores al cuadrado (SSE). Cada curva tenue es un individuo; la dorada es la mejor.</p>
+  <div class="cab">
+    <div><div class="screen wide"><canvas id="ccv" aria-label="Datos y curvas ajustadas"></canvas></div><div class="score" id="cst"></div></div>
+    <div class="side">
+      <div class="panel ctl">
+        <div><label for="calg">Algoritmo</label><select id="calg"><option value="de">Evolución diferencial</option><option value="pso">Enjambre de partículas</option><option value="rand">Búsqueda aleatoria</option></select></div>
+        <div><label for="cnoise">Ruido de medición (cm) <b id="cnv">8</b></label><input type="range" id="cnoise" min="0" max="25" value="8"></div>
+        <div class="row"><button class="go" id="cplay">▶ JUGAR</button><button id="cstep">1 generación</button><button id="creset">Reiniciar</button></div>
+      </div>
+      <div class="panel"><h3>PARÁMETROS</h3><table class="data" id="ctab"></table></div>
+      <div class="ask"><b>PREGUNTA</b>¿Cuántas evaluaciones necesita cada algoritmo para bajar el SSE de 2000? Sube el ruido: ¿cambian mucho los parámetros estimados?</div>
+    </div>
+  </div>
+</section>
+
+<!-- NIVEL 6 -->
+<section class="level" id="sensores">
+  <div class="lvhead"><span class="tag">NIVEL 6 · COBERTURA</span><a class="top" href="#">↑ menú</a></div>
+  <div class="lvhead"><h2>Dónde poner los sensores de humedad</h2></div>
+  <p class="lead">Una parcela irregular de 1 ha (100 × 100 m) se cubre con k sensores de radio R. Cada partícula del enjambre es una propuesta completa: las 2k coordenadas de todos los sensores. La aptitud es el porcentaje de la parcela cubierto, con penalización si un sensor queda fuera.</p>
+  <div class="cab">
+    <div><div class="screen"><canvas id="ecv" aria-label="Parcela y sensores"></canvas></div><div class="score" id="est"></div></div>
+    <div class="side">
+      <div class="panel ctl">
+        <div><label for="ek">Sensores k <b id="ekv">5</b></label><input type="range" id="ek" min="2" max="10" value="5"></div>
+        <div><label for="er">Radio R (m) <b id="erv">18</b></label><input type="range" id="er" min="8" max="30" value="18"></div>
+        <div class="row"><button class="go" id="eplay">▶ JUGAR</button><button id="estep">1 iteración</button><button id="ereset">Reiniciar</button></div>
+      </div>
+      <div class="legend"><span><i class="sw" style="background:#3ff0ff"></i>cubierto</span><span><i class="sw" style="background:#3a2a66"></i>sin cubrir</span><span><i class="sw" style="background:#ffe14d"></i>sensor de la mejor solución</span></div>
+      <div class="ask"><b>PREGUNTA</b>¿Cuántos sensores de 18 m se necesitan para cubrir más del 95 % de la parcela? ¿Por qué el enjambre a veces deja dos sensores casi encimados?</div>
+    </div>
+  </div>
+</section>
+
+<!-- NIVEL 7 -->
+<section class="level" id="riego">
+  <div class="lvhead"><span class="tag">NIVEL 7 · RECOCIDO SIMULADO</span><a class="top" href="#">↑ menú</a></div>
+  <div class="lvhead"><h2>Calendario de riego con agua limitada</h2></div>
+  <p class="lead">Hay que repartir una cantidad fija de agua en 12 semanas. La planta es más sensible al estrés en la floración, así que un milímetro ahí vale más que al inicio. El recocido mueve agua de una semana a otra: acepta siempre las mejoras y, mientras la temperatura es alta, también algunos cambios peores. Modelo de rendimiento simplificado, con fines didácticos.</p>
+  <div class="cab">
+    <div><div class="screen wide"><canvas id="wcv" aria-label="Agua por semana"></canvas></div><div class="score" id="wst"></div></div>
+    <div class="side">
+      <div class="panel ctl">
+        <div><label for="ww">Agua total disponible (mm) <b id="wwv">360</b></label><input type="range" id="ww" min="150" max="560" step="10" value="360"></div>
+        <div class="row"><button class="go" id="wplay">▶ JUGAR</button><button id="wstep">50 iteraciones</button><button id="wreset">Reiniciar</button></div>
+      </div>
+      <div class="panel info" id="winfo" aria-live="polite"></div>
+      <div class="ask"><b>PREGUNTA</b>¿Cuánto rendimiento gana el calendario optimizado sobre el reparto proporcional a la demanda? ¿En qué semanas recorta agua cuando hay poca?</div>
+    </div>
+  </div>
+</section>
+
+<footer><b>GAME OVER · ¿OTRA PARTIDA?</b><p>Todo corre en tu navegador, sin servidor: puedes abrir el código y modificarlo. Las parcelas, mediciones y el modelo de riego son datos de ejemplo.</p></footer>
+</div>
+
+<script>
+/* ============================================================
+   Motor de optimización · Cómputo Suave U3 · núcleo
+   Funciones de prueba, mapa de calor, escena y ejecutor paso a paso
+   ============================================================ */
+const TAU = Math.PI * 2;
+const C = {
+  gold: '#ffc94d', coral: '#ff6b6b', mag: '#ff5fd2', cyan: '#62e6ff', lime: '#b6f36a',
+  vio: '#b49cff', w: '#f5f3ff', ink: '#0b1026', mute: 'rgba(245,243,255,.5)', faint: 'rgba(245,243,255,.2)'
+};
+const HUES = ['#ffc94d', '#62e6ff', '#ff6b6b', '#b6f36a', '#ff5fd2', '#b49cff', '#ff9f43', '#4dd4ac',
+  '#f78fb3', '#70a1ff', '#eccc68', '#7bed9f', '#e17055', '#81ecec', '#fd79a8', '#a29bfe'];
+
+/* ---------- aleatorios con semilla ---------- */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+class Rng {
+  constructor(seed) { this.r = mulberry32(seed >>> 0); this.spare = null; }
+  u(a = 0, b = 1) { return a + (b - a) * this.r(); }
+  int(n) { return Math.floor(this.r() * n); }
+  n() {
+    if (this.spare !== null) { const v = this.spare; this.spare = null; return v; }
+    let u = 0; while (u === 0) u = this.r();
+    const v = this.r(), m = Math.sqrt(-2 * Math.log(u));
+    this.spare = m * Math.sin(TAU * v); return m * Math.cos(TAU * v);
+  }
+  distinct(n, k, excl = []) {
+    const out = []; let guard = 0;
+    while (out.length < k && guard++ < 1000) { const v = this.int(n); if (!out.includes(v) && !excl.includes(v)) out.push(v); }
+    return out;
+  }
+  perm(n) { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = this.int(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+}
+
+/* ---------- formato ---------- */
+const SUPS = { '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
+function fm(v, d = 3) {
+  if (v === undefined || v === null || Number.isNaN(v)) return '—';
+  if (!isFinite(v)) return v > 0 ? '∞' : '−∞';
+  const a = Math.abs(v);
+  if (a !== 0 && (a < 1e-3 || a >= 1e5)) {
+    const [m, e] = v.toExponential(2).split('e');
+    return m.replace('-', '−') + '×10' + String(+e).split('').map(ch => SUPS[ch] || ch).join('');
+  }
+  let s = (+v.toFixed(d)).toString();
+  return s.replace('-', '−');
+}
+const pv = (p, d = 3) => `(${fm(p[0], d)}, ${fm(p[1], d)})`;
+const sb = k => `<sub>${k}</sub>`;
+
+/* ---------- vectores ---------- */
+const add = (a, b) => [a[0] + b[0], a[1] + b[1]];
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
+const mul = (a, s) => [a[0] * s, a[1] * s];
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+
+/* ---------- funciones de prueba 2D ---------- */
+const FUNCS = {
+  esfera: {
+    nombre: 'Esfera', f: (x, y) => x * x + y * y, dom: [-5.12, 5.12, -5.12, 5.12], opt: [[0, 0]], fopt: 0,
+    formula: 'f(x, y) = x² + y²', eta: 0.1, start: [-4, 3.5], tipo: 'Unimodal y convexa',
+    nota: 'Un solo mínimo y curvas de nivel circulares. Cualquier método local llega al óptimo.'
+  },
+  booth: {
+    nombre: 'Booth', f: (x, y) => (x + 2 * y - 7) ** 2 + (2 * x + y - 5) ** 2, dom: [-5, 5, -5, 5], opt: [[1, 3]], fopt: 0,
+    formula: 'f(x, y) = (x + 2y − 7)² + (2x + y − 5)²', eta: 0.05, start: [-4, -4], tipo: 'Cuadrática, valle inclinado',
+    nota: 'Curvas de nivel elípticas e inclinadas: el gradiente avanza en zigzag si la tasa es grande.'
+  },
+  rosenbrock: {
+    nombre: 'Rosenbrock', f: (x, y) => 100 * (y - x * x) ** 2 + (1 - x) ** 2, dom: [-2, 2, -1, 3], opt: [[1, 1]], fopt: 0,
+    formula: 'f(x, y) = 100(y − x²)² + (1 − x)²', eta: 0.001, start: [-1.2, 1], tipo: 'Valle curvo y angosto',
+    nota: 'Encontrar el valle es fácil; recorrerlo hasta (1, 1) es difícil. Es la función de la práctica de AG.'
+  },
+  himmelblau: {
+    nombre: 'Himmelblau', f: (x, y) => (x * x + y - 11) ** 2 + (x + y * y - 7) ** 2, dom: [-5, 5, -5, 5],
+    opt: [[3, 2], [-2.805118, 3.131312], [-3.77931, -3.283186], [3.584428, -1.848126]], fopt: 0,
+    formula: 'f(x, y) = (x² + y − 11)² + (x + y² − 7)²', eta: 0.01, start: [-0.3, -0.6], tipo: 'Cuatro mínimos globales',
+    nota: 'Los cuatro mínimos valen 0. El punto inicial decide a cuál llega un método local.'
+  },
+  rastrigin: {
+    nombre: 'Rastrigin', f: (x, y) => 20 + x * x - 10 * Math.cos(TAU * x) + y * y - 10 * Math.cos(TAU * y),
+    dom: [-5.12, 5.12, -5.12, 5.12], opt: [[0, 0]], fopt: 0,
+    formula: 'f(x, y) = 20 + Σ (xᵢ² − 10 cos 2πxᵢ)', eta: 0.002, start: [3.2, -2.7], tipo: 'Multimodal, mínimos en cuadrícula',
+    nota: 'Cerca de 100 mínimos locales en el dominio. Un método local se queda en el más cercano.'
+  },
+  ackley: {
+    nombre: 'Ackley',
+    f: (x, y) => -20 * Math.exp(-0.2 * Math.sqrt((x * x + y * y) / 2)) - Math.exp((Math.cos(TAU * x) + Math.cos(TAU * y)) / 2) + 20 + Math.E,
+    dom: [-5, 5, -5, 5], opt: [[0, 0]], fopt: 0,
+    formula: 'f = −20e^(−0.2√(Σxᵢ²/n)) − e^(Σcos 2πxᵢ/n) + 20 + e', eta: 0.05, start: [3, -2.5], tipo: 'Casi plana con un embudo',
+    nota: 'Lejos del centro es casi plana y llena de pequeños hoyos; el óptimo está en un embudo angosto.'
+  },
+  griewank: {
+    nombre: 'Griewank', f: (x, y) => 1 + (x * x + y * y) / 4000 - Math.cos(x) * Math.cos(y / Math.SQRT2),
+    dom: [-10, 10, -10, 10], opt: [[0, 0]], fopt: 0,
+    formula: 'f = 1 + Σxᵢ²/4000 − Π cos(xᵢ/√i)', eta: 1, start: [8, -7], tipo: 'Multimodal suave',
+    nota: 'Una parábola muy plana con ondas encima: los mínimos locales tienen valores muy parecidos.'
+  },
+  easom: {
+    nombre: 'Easom', f: (x, y) => -Math.cos(x) * Math.cos(y) * Math.exp(-((x - Math.PI) ** 2 + (y - Math.PI) ** 2)),
+    dom: [-1, 7, -1, 7], opt: [[Math.PI, Math.PI]], fopt: -1,
+    formula: 'f = −cos x cos y e^(−(x−π)² − (y−π)²)', eta: 0.5, start: [0.5, 5.5], tipo: 'Meseta con un hoyo',
+    nota: 'Casi todo el dominio vale 0: el gradiente no da información hasta caer cerca del hoyo.'
+  },
+  schwefel: {
+    nombre: 'Schwefel', f: (x, y) => 837.9658 - x * Math.sin(Math.sqrt(Math.abs(x))) - y * Math.sin(Math.sqrt(Math.abs(y))),
+    dom: [-500, 500, -500, 500], opt: [[420.9687, 420.9687]], fopt: 0,
+    formula: 'f = 418.98n − Σ xᵢ sen √|xᵢ|', eta: 10, start: [-300, 200], tipo: 'Engañosa',
+    nota: 'El segundo mejor mínimo está lejos del óptimo, en la esquina opuesta. Engaña a muchos métodos.'
+  }
+};
+for (const [k, F] of Object.entries(FUNCS)) F.id = k;
+
+/* ---------- funciones 1D ---------- */
+const F1D = {
+  expo: { id: 'expo', nombre: 'e^x − 2x', f: x => Math.exp(x) - 2 * x, a: -1, b: 2.2, opt: Math.LN2, start: 0 },
+  cuartica: { id: 'cuartica', nombre: 'x⁴ − 3x² + x', f: x => x ** 4 - 3 * x * x + x, a: -2.1, b: 2.1, opt: -1.30084, start: 0.6 },
+  ondas: { id: 'ondas', nombre: 'x·sen(10πx) + 1', f: x => x * Math.sin(10 * Math.PI * x) + 1, a: -1, b: 2, opt: 1.85055, max: true }
+};
+
+function grad(F, p) {
+  const h = 1e-6 * Math.max(1, Math.abs(p[0]), Math.abs(p[1]));
+  return [(F.f(p[0] + h, p[1]) - F.f(p[0] - h, p[1])) / (2 * h), (F.f(p[0], p[1] + h) - F.f(p[0], p[1] - h)) / (2 * h)];
+}
+const rng2 = F => Math.max(F.dom[1] - F.dom[0], F.dom[3] - F.dom[2]);
+const inDom = (F, p) => p[0] >= F.dom[0] && p[0] <= F.dom[1] && p[1] >= F.dom[2] && p[1] <= F.dom[3];
+const clampP = (F, p) => [Math.min(F.dom[1], Math.max(F.dom[0], p[0])), Math.min(F.dom[3], Math.max(F.dom[2], p[1]))];
+const randIn = (F, R) => [R.u(F.dom[0], F.dom[1]), R.u(F.dom[2], F.dom[3])];
+
+/* ---------- mapa de calor con curvas de nivel ---------- */
+const STOPS = [[0, [250, 250, 214]], [0.1, [206, 240, 140]], [0.28, [84, 200, 160]], [0.5, [44, 120, 158]], [0.75, [30, 52, 104]], [1, [13, 19, 46]]];
+function cmap(q) {
+  for (let i = 1; i < STOPS.length; i++) {
+    if (q <= STOPS[i][0]) {
+      const [q0, c0] = STOPS[i - 1], [q1, c1] = STOPS[i], t = (q - q0) / (q1 - q0);
+      return [c0[0] + (c1[0] - c0[0]) * t, c0[1] + (c1[1] - c0[1]) * t, c0[2] + (c1[2] - c0[2]) * t];
+    }
+  }
+  return STOPS[STOPS.length - 1][1];
+}
+const fieldCache = new Map();
+function fieldCanvas(F, w, h) {
+  const key = F.id + ':' + w + 'x' + h;
+  if (fieldCache.has(key)) return fieldCache.get(key);
+  const [x0, x1, y0, y1] = F.dom, vals = new Float64Array(w * h);
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    vals[j * w + i] = F.f(x0 + (i + 0.5) / w * (x1 - x0), y1 - (j + 0.5) / h * (y1 - y0));
+  }
+  const step = Math.max(1, Math.floor(vals.length / 5000)), samp = [];
+  for (let i = 0; i < vals.length; i += step) samp.push(vals[i]);
+  samp.sort((a, b) => a - b);
+  const q = v => { let lo = 0, hi = samp.length - 1; while (lo < hi) { const m = (lo + hi + 1) >> 1; if (samp[m] <= v) lo = m; else hi = m - 1; } return lo / (samp.length - 1); };
+  const NB = 14, band = new Uint8Array(w * h), qq = new Float32Array(w * h);
+  for (let i = 0; i < vals.length; i++) { qq[i] = q(vals[i]); band[i] = Math.min(NB - 1, Math.floor(qq[i] * NB)); }
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const cx = cv.getContext('2d'), img = cx.createImageData(w, h);
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const k = j * w + i; let [r, g, b] = cmap(Math.pow(qq[k], 0.9));
+    const edge = (i < w - 1 && band[k] !== band[k + 1]) || (j < h - 1 && band[k] !== band[k + w]);
+    if (edge) { r *= 0.62; g *= 0.62; b *= 0.62; }
+    img.data[4 * k] = r; img.data[4 * k + 1] = g; img.data[4 * k + 2] = b; img.data[4 * k + 3] = 255;
+  }
+  cx.putImageData(img, 0, 0);
+  fieldCache.set(key, cv);
+  return cv;
+}
+
+/* ---------- lienzo ---------- */
+class Plot {
+  constructor(cv) { this.cv = cv; this.ctx = cv.getContext('2d'); this.mode = null; this.d = 1; this.pad = 0; }
+  size() {
+    const r = this.cv.getBoundingClientRect(), d = Math.min(window.devicePixelRatio || 1, 2);
+    const W = Math.max(240, Math.round(r.width * d)), H = Math.max(180, Math.round(r.height * d));
+    if (this.cv.width !== W || this.cv.height !== H) { this.cv.width = W; this.cv.height = H; }
+    this.d = d; this.W = W; this.H = H;
+  }
+  set2D(F) { this.mode = '2d'; this.F = F; this.v = F.dom; this.padK = 0; }
+  set1D(G) {
+    this.mode = '1d'; this.G = G; let lo = Infinity, hi = -Infinity;
+    for (let i = 0; i <= 400; i++) { const y = G.f(G.a + (G.b - G.a) * i / 400); lo = Math.min(lo, y); hi = Math.max(hi, y); }
+    const p = (hi - lo) * 0.1; this.v = [G.a, G.b, lo - p, hi + p]; this.padK = 30;
+  }
+  setPlain(v, pad = 18) { this.mode = 'plain'; this.v = v; this.padK = pad; }
+  X(x) { const [a, b] = this.v, p = this.padK * this.d; return p + (x - a) / (b - a) * (this.W - 2 * p); }
+  Y(y) { const [, , c, e] = this.v, p = this.padK * this.d; return this.H - p - (y - c) / (e - c) * (this.H - 2 * p); }
+  inv(px, py) {
+    const [a, b, c, e] = this.v, p = this.padK * this.d;
+    return [a + (px * this.d - p) / (this.W - 2 * p) * (b - a), c + (this.H - p - py * this.d) / (this.H - 2 * p) * (e - c)];
+  }
+  P(pt) { return [this.X(pt[0]), this.Y(pt[1])]; }
+  draw(S = {}) {
+    this.size();
+    const g = this.ctx, d = this.d;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.fillStyle = C.ink; g.fillRect(0, 0, this.W, this.H);
+    if (this.mode === '2d') {
+      const fw = Math.min(380, Math.round(this.W / 2)), fh = Math.min(380, Math.round(this.H / 2));
+      g.imageSmoothingEnabled = true; g.drawImage(fieldCanvas(this.F, fw, fh), 0, 0, this.W, this.H);
+      if (S.showOpt !== false) for (const o of this.F.opt) this.cross(o);
+    } else if (this.mode === '1d') {
+      this.axes1D();
+      const G = this.G; g.beginPath();
+      for (let i = 0; i <= 600; i++) { const x = G.a + (G.b - G.a) * i / 600, X = this.X(x), Y = this.Y(G.f(x)); i ? g.lineTo(X, Y) : g.moveTo(X, Y); }
+      g.strokeStyle = '#cfe6ff'; g.lineWidth = 2 * d; g.stroke();
+      if (S.showOpt !== false && G.opt !== undefined) {
+        g.setLineDash([4 * d, 4 * d]); g.strokeStyle = 'rgba(182,243,106,.6)'; g.lineWidth = 1.2 * d;
+        g.beginPath(); g.moveTo(this.X(G.opt), this.padK * d); g.lineTo(this.X(G.opt), this.H - this.padK * d); g.stroke(); g.setLineDash([]);
+        this.tag(this.X(G.opt), this.padK * d + 10 * d, G.max ? 'máximo global' : 'mínimo global', C.lime);
+      }
+    } else if (S.axes) { this.axes1D();
+    } else {
+      g.strokeStyle = 'rgba(98,230,255,.06)'; g.lineWidth = 1;
+      for (let i = 0; i <= 10; i++) { const x = this.X(this.v[0] + (this.v[1] - this.v[0]) * i / 10), y = this.Y(this.v[2] + (this.v[3] - this.v[2]) * i / 10); g.beginPath(); g.moveTo(x, 0); g.lineTo(x, this.H); g.moveTo(0, y); g.lineTo(this.W, y); g.stroke(); }
+    }
+    (S.edges || []).forEach(e => this.line(e.a, e.b, e.c, e.w, e.dash, false, e.al));
+    (S.paths || []).forEach(p => this.path(p));
+    (S.circles || []).forEach(c => this.circle(c));
+    (S.segs || []).forEach(s => this.line(s.a, s.b, s.c, s.w || 2, s.dash, s.head, s.al, s.label));
+    (S.pts || []).forEach(p => this.point(p));
+    (S.labels || []).forEach(l => { const [x, y] = this.P(l.p); this.tag(x, y, l.t, l.c || C.w); });
+    if (S.pie) this.pie(S.pie);
+    if (S.spark) this.spark(S.spark);
+    if (S.banner) this.banner(S.banner);
+  }
+  axes1D() {
+    const g = this.ctx, d = this.d, p = this.padK * d;
+    g.strokeStyle = 'rgba(245,243,255,.12)'; g.lineWidth = 1; g.font = `${10 * d}px "IBM Plex Mono", monospace`; g.fillStyle = C.mute;
+    const [a, b, c, e] = this.v;
+    const nice = (lo, hi) => { const s = Math.pow(10, Math.floor(Math.log10((hi - lo) / 4))); const st = [1, 2, 5, 10].map(m => m * s).find(m => (hi - lo) / m <= 6); const out = []; for (let v = Math.ceil(lo / st) * st; v <= hi + 1e-9; v += st) out.push(+v.toFixed(6)); return out; };
+    for (const t of nice(a, b)) { const X = this.X(t); g.beginPath(); g.moveTo(X, p); g.lineTo(X, this.H - p); g.stroke(); g.fillText(fm(t, 2), X - 8 * d, this.H - p + 14 * d); }
+    for (const t of nice(c, e)) { const Y = this.Y(t); g.beginPath(); g.moveTo(p, Y); g.lineTo(this.W - p, Y); g.stroke(); g.fillText(fm(t, 2), 3 * d, Y + 3 * d); }
+  }
+  cross(o) {
+    const g = this.ctx, d = this.d, [x, y] = this.P(o), r = 7 * d;
+    g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 1.5 * d;
+    g.beginPath(); g.moveTo(x - r, y); g.lineTo(x - r / 2.5, y); g.moveTo(x + r / 2.5, y); g.lineTo(x + r, y);
+    g.moveTo(x, y - r); g.lineTo(x, y - r / 2.5); g.moveTo(x, y + r / 2.5); g.lineTo(x, y + r); g.stroke();
+  }
+  path(p) {
+    if (!p.p || p.p.length < 2) return;
+    const g = this.ctx, d = this.d; g.beginPath();
+    p.p.forEach((pt, i) => { const [x, y] = this.P(pt); i ? g.lineTo(x, y) : g.moveTo(x, y); });
+    if (p.closed) g.closePath();
+    g.globalAlpha = p.al ?? 1;
+    if (p.fill) { g.fillStyle = p.fill; g.fill(); }
+    g.strokeStyle = p.c || C.gold; g.lineWidth = (p.w || 2) * d; g.setLineDash(p.dash ? [5 * d, 4 * d] : []); g.lineJoin = 'round'; g.stroke();
+    g.setLineDash([]); g.globalAlpha = 1;
+    if (p.dots) p.p.forEach(pt => { const [x, y] = this.P(pt); g.fillStyle = p.c || C.gold; g.beginPath(); g.arc(x, y, 2.2 * d, 0, TAU); g.fill(); });
+  }
+  line(a, b, c = C.w, w = 2, dash, head, al = 1, label) {
+    const g = this.ctx, d = this.d, [x0, y0] = this.P(a), [x1, y1] = this.P(b);
+    g.globalAlpha = al; g.strokeStyle = c; g.lineWidth = w * d; g.setLineDash(dash ? [5 * d, 4 * d] : []);
+    g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); g.setLineDash([]);
+    if (head && Math.hypot(x1 - x0, y1 - y0) > 4 * d) {
+      const ang = Math.atan2(y1 - y0, x1 - x0), L = 10 * d;
+      g.fillStyle = c; g.beginPath(); g.moveTo(x1, y1);
+      g.lineTo(x1 - L * Math.cos(ang - 0.4), y1 - L * Math.sin(ang - 0.4)); g.lineTo(x1 - L * Math.cos(ang + 0.4), y1 - L * Math.sin(ang + 0.4)); g.closePath(); g.fill();
+    }
+    g.globalAlpha = 1;
+    if (label) this.tag((x0 + x1) / 2, (y0 + y1) / 2, label, c);
+  }
+  circle(c) {
+    const g = this.ctx, d = this.d, [x, y] = this.P(c.p);
+    const rx = Math.abs(this.X(c.p[0] + c.R) - x), ry = Math.abs(this.Y(c.p[1] + c.R) - y);
+    g.strokeStyle = c.c || C.mute; g.lineWidth = (c.w || 1.5) * d; g.setLineDash(c.dash === false ? [] : [4 * d, 4 * d]);
+    g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, TAU);
+    if (c.fill) { g.fillStyle = c.fill; g.fill(); }
+    g.stroke(); g.setLineDash([]);
+  }
+  point(p) {
+    const g = this.ctx, d = this.d, [x, y] = this.P(p.p), r = (p.r || 4) * d;
+    if (p.glow) { const gr = g.createRadialGradient(x, y, 0, x, y, p.glow * d); gr.addColorStop(0, p.c + 'cc'); gr.addColorStop(1, p.c + '00'); g.fillStyle = gr; g.beginPath(); g.arc(x, y, p.glow * d, 0, TAU); g.fill(); }
+    if (p.star) { this.star(x, y, r * 1.6, p.c); }
+    else {
+      g.fillStyle = p.hollow ? 'transparent' : (p.c || C.w); g.strokeStyle = p.hollow ? (p.c || C.w) : 'rgba(11,16,38,.85)'; g.lineWidth = (p.hollow ? 1.6 : 1.2) * d;
+      g.beginPath(); g.arc(x, y, r, 0, TAU); if (!p.hollow) g.fill(); g.stroke();
+    }
+    if (p.ring) { g.strokeStyle = p.ring; g.lineWidth = 2 * d; g.beginPath(); g.arc(x, y, r + 4 * d, 0, TAU); g.stroke(); }
+    if (p.label) this.tag(x + r + 4 * d, y - r - 4 * d, p.label, p.lc || p.c || C.w, true);
+  }
+  star(x, y, r, c) {
+    const g = this.ctx; g.beginPath();
+    for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; g.lineTo(x + rr * Math.cos(a), y + rr * Math.sin(a)); }
+    g.closePath(); g.fillStyle = c || C.gold; g.fill(); g.strokeStyle = 'rgba(11,16,38,.9)'; g.lineWidth = 1.2 * this.d; g.stroke();
+  }
+  tag(x, y, t, c = C.w, left) {
+    const g = this.ctx, d = this.d; g.font = `600 ${11 * d}px "IBM Plex Mono", monospace`;
+    const w = g.measureText(t).width + 8 * d, h = 16 * d;
+    let X = left ? x : x - w / 2, Y = y - h / 2;
+    X = Math.max(2, Math.min(this.W - w - 2, X)); Y = Math.max(2, Math.min(this.H - h - 2, Y));
+    g.fillStyle = 'rgba(11,16,38,.82)'; g.beginPath(); g.roundRect ? g.roundRect(X, Y, w, h, 4 * d) : g.rect(X, Y, w, h); g.fill();
+    g.fillStyle = c; g.fillText(t, X + 4 * d, Y + 12 * d);
+  }
+  pie(P) {
+    const g = this.ctx, d = this.d, R = Math.min(this.W, this.H) * 0.15, cx = this.W - R - 12 * d, cy = R + 12 * d;
+    const tot = P.vals.reduce((a, b) => a + b, 0); let a0 = -Math.PI / 2;
+    g.fillStyle = 'rgba(11,16,38,.85)'; g.beginPath(); g.arc(cx, cy, R + 6 * d, 0, TAU); g.fill();
+    P.vals.forEach((v, i) => {
+      const a1 = a0 + TAU * v / tot; g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R, a0, a1); g.closePath();
+      g.fillStyle = P.cols[i]; g.globalAlpha = (P.hi === undefined || P.hi === i) ? 0.95 : 0.45; g.fill(); g.globalAlpha = 1;
+      g.strokeStyle = C.ink; g.lineWidth = 1.5 * d; g.stroke(); a0 = a1;
+    });
+    (P.r || []).forEach(r => {
+      const a = -Math.PI / 2 + TAU * r; g.strokeStyle = C.w; g.lineWidth = 2 * d;
+      g.beginPath(); g.moveTo(cx + (R - 6 * d) * Math.cos(a), cy + (R - 6 * d) * Math.sin(a)); g.lineTo(cx + (R + 6 * d) * Math.cos(a), cy + (R + 6 * d) * Math.sin(a)); g.stroke();
+    });
+    g.font = `600 ${10 * d}px "IBM Plex Mono", monospace`; g.fillStyle = C.w; g.textAlign = 'center';
+    g.fillText(P.title || 'ruleta', cx, cy + R + 18 * d); g.textAlign = 'left';
+  }
+  spark(S) {
+    const g = this.ctx, d = this.d, w = Math.min(this.W * 0.42, 260 * d), h = Math.min(this.H * 0.2, 90 * d), x0 = 10 * d, y0 = this.H - h - 10 * d;
+    const data = S.data.filter(v => isFinite(v)); if (data.length < 2) return;
+    g.fillStyle = 'rgba(11,16,38,.86)'; g.beginPath(); g.roundRect ? g.roundRect(x0, y0, w, h, 6 * d) : g.rect(x0, y0, w, h); g.fill();
+    let lo = Math.min(...data), hi = Math.max(...data); if (hi - lo < 1e-12) { hi = lo + 1; }
+    const useLog = S.log !== false && lo > 0 && hi / lo > 50;
+    const tr = v => useLog ? Math.log10(v) : v; const L0 = tr(lo), L1 = tr(hi);
+    g.beginPath();
+    data.forEach((v, i) => { const X = x0 + 8 * d + (w - 16 * d) * i / (data.length - 1), Y = y0 + h - 8 * d - (h - 26 * d) * (tr(v) - L0) / (L1 - L0 || 1); i ? g.lineTo(X, Y) : g.moveTo(X, Y); });
+    g.strokeStyle = S.c || C.gold; g.lineWidth = 1.8 * d; g.stroke();
+    if (S.data2) {
+      const d2 = S.data2.filter(v => isFinite(v)); g.beginPath();
+      d2.forEach((v, i) => { const X = x0 + 8 * d + (w - 16 * d) * i / Math.max(1, d2.length - 1), Y = y0 + h - 8 * d - (h - 26 * d) * (tr(Math.max(v, lo)) - L0) / (L1 - L0 || 1); i ? g.lineTo(X, Y) : g.moveTo(X, Y); });
+      g.strokeStyle = C.cyan; g.globalAlpha = 0.6; g.stroke(); g.globalAlpha = 1;
+    }
+    g.font = `600 ${10 * d}px "IBM Plex Mono", monospace`; g.fillStyle = C.mute;
+    g.fillText((S.label || 'mejor f') + (useLog ? ' (log)' : '') + ': ' + fm(data[data.length - 1]), x0 + 8 * d, y0 + 14 * d);
+  }
+  banner(t) {
+    const g = this.ctx, d = this.d; g.font = `700 ${12 * d}px "IBM Plex Mono", monospace`;
+    const w = g.measureText(t).width + 16 * d; g.fillStyle = 'rgba(11,16,38,.88)';
+    g.fillRect(10 * d, 10 * d, w, 22 * d); g.fillStyle = C.gold; g.fillText(t, 18 * d, 25 * d);
+  }
+}
+
+/* ---------- ejecutor paso a paso ---------- */
+class Runner {
+  constructor({ plot, info, stats }) { this.plot = plot; this.info = info; this.stats = stats; this.timer = null; this.speed = 4; this.onState = null; }
+  load(def, F, P, seed = 7) {
+    this.stopPlay(); this.def = def; this.F = F; this.evals = 0; this.S = {}; this.R = new Rng(seed);
+    const self = this;
+    const ev = def.kind === '1d' ? (x => { self.evals++; return F.f(x); }) : (def.kind === 'tsp' ? (r => { self.evals++; return r; }) : ((x, y) => { self.evals++; return F.f(x, y); }));
+    if (def.kind === '2d') this.plot.set2D(F); else if (def.kind === '1d') this.plot.set1D(F); else this.plot.setPlain([0, 1, 0, 1]);
+    this.gen = def.gen(F, P, this.R, this.S, ev); this.done = false; this.cur = { info: '' };
+    this.adv(); this.render();
+  }
+  adv() {
+    if (this.done) return false;
+    let r; try { r = this.gen.next(); } catch (e) { console.error(e); this.done = true; return false; }
+    if (r.done) { this.done = true; return false; }
+    this.cur = r.value; if (this.cur.stop) this.done = true; return true;
+  }
+  step() { this.adv(); this.render(); }
+  iterate() { let n = 0; while (n++ < 4000) { if (!this.adv()) break; if (this.cur.end) break; } this.render(); }
+  play() {
+    if (this.timer) { this.stopPlay(); return; }
+    const tick = () => { this.iterate(); if (this.done) { this.stopPlay(); return; } this.timer = setTimeout(tick, 1000 / this.speed); };
+    this.timer = setTimeout(tick, 10); this.onState && this.onState(true);
+  }
+  stopPlay() { if (this.timer) clearTimeout(this.timer); this.timer = null; this.onState && this.onState(false); }
+  render() {
+    this.plot.draw(this.S);
+    if (this.info) this.info.innerHTML = this.cur.info || '';
+    if (this.stats) {
+      const S = this.S, b = S.best;
+      const lab = this.def.kind === 'tsp' ? 'Mejor longitud' : (this.F.max ? 'Mejor f (máx.)' : 'Mejor f');
+      const where = b && b.p && this.def.kind !== 'tsp' ? (this.def.kind === '1d' ? ` en x = ${fm(b.p, 4)}` : ` en ${pv(b.p, 3)}`) : '';
+      this.stats.innerHTML = `<span>${S.iterLabel || 'Iteración'} <b>${S.iter ?? 0}</b></span><span>Evaluaciones <b>${this.evals}</b></span>` +
+        (b ? `<span>${lab} <b>${fm(b.f, 4)}</b>${where}</span>` : '') + (S.extra ? `<span>${S.extra}</span>` : '') + (this.done ? '<span class="fin">terminó</span>' : '');
+    }
+  }
+}
+
+/* Corre un algoritmo sin dibujar hasta agotar el presupuesto; devuelve la traza (evaluaciones, mejor f) */
+function runBudget(def, F, P, seed, budget) {
+  let evals = 0; const S = {}, R = new Rng(seed), ev = (x, y) => { evals++; return F.f(x, y); };
+  const g = def.gen(F, P, R, S, ev), trace = []; let guard = 0;
+  while (evals < budget && guard++ < 200000) {
+    const r = g.next(); if (r.done) break;
+    if (S.best) trace.push([evals, S.best.f]);
+    if (r.value && r.value.stop) break;
+  }
+  return trace;
+}
+
+/* ============================================================
+   Algoritmos de la Unidad 3 como generadores paso a paso.
+   Cada yield deja la escena S lista para dibujar y devuelve
+   { info: html de la operación, end: fin de iteración, stop: terminó }
+   ============================================================ */
+const ALG = {};
+const mono = s => `<code>${s}</code>`;
+const op = (n, t) => `<div class="op"><span>${n}</span>${t}</div>`;
+const setBest = (S, p, f, max = false) => { if (!S.best || (max ? f > S.best.f : f < S.best.f)) S.best = { p: Array.isArray(p) ? p.slice() : p, f }; };
+
+/* ---------------- 1. Descenso de gradiente ---------------- */
+ALG.gradiente = {
+  nombre: 'Descenso de gradiente', kind: '2d', click: true,
+  funcs: ['booth', 'esfera', 'rosenbrock', 'himmelblau', 'rastrigin', 'ackley'],
+  params: F => [{ k: 'eta', l: 'η (tasa de aprendizaje)', min: F.eta / 10, max: F.eta * 4, step: F.eta / 20, v: F.eta }],
+  *gen(F, P, R, S, ev) {
+    let x = (P.start || F.start).slice(), f = ev(...x); const path = [x.slice()], hist = [f];
+    S.iter = 0; setBest(S, x, f);
+    S.paths = [{ p: path, c: C.gold, w: 2.2, dots: true }]; S.pts = [{ p: x, c: C.w, r: 6, label: 'x₀' }]; S.spark = { data: hist, label: 'f(xₖ)' };
+    yield { info: op('Inicio', `x${sb(0)} = ${pv(x)}, f(x${sb(0)}) = ${fm(f)}`) + `<p>Regla: ${mono('x<sub>k+1</sub> = x<sub>k</sub> − η ∇f(x<sub>k</sub>)')}. Haz clic en el mapa para cambiar el punto inicial.</p>`, end: true };
+    for (let k = 0; k < 3000; k++) {
+      const g = grad(F, x), gn = Math.hypot(...g), nx = [x[0] - P.eta * g[0], x[1] - P.eta * g[1]];
+      const vis = dist(nx, x) > 0.25 * rng2(F) ? add(x, mul(sub(nx, x), 0.25 * rng2(F) / dist(nx, x))) : nx;
+      S.segs = [{ a: x, b: vis, c: C.coral, w: 2.6, head: true, label: '−η∇f' }];
+      yield { info: op('1 · Gradiente', `∇f(x${sb(k)}) = ${pv(g)} &nbsp; ‖∇f‖ = ${fm(gn)}`) + `<p>La flecha roja es −η∇f: la dirección de mayor descenso, escalada por η = ${fm(P.eta, 4)}.</p>` };
+      const old = x; x = nx; f = ev(...x); path.push(x.slice()); hist.push(f); S.iter = k + 1; setBest(S, x, f);
+      S.segs = []; S.pts = [{ p: x, c: C.w, r: 6, label: 'x' + (k + 1 < 10 ? '₀₁₂₃₄₅₆₇₈₉'[k + 1] : '') }];
+      const info = op('2 · Paso', `x${sb(k + 1)} = ${pv(old)} − ${fm(P.eta, 4)}·${pv(g)} = <b>${pv(x)}</b>`) + `<p>f(x${sb(k + 1)}) = ${fm(f)} ${f < hist[hist.length - 2] ? '↓ bajó' : '↑ subió: η es demasiado grande'}</p>`;
+      if (!inDom({ dom: F.dom.map((v, i) => v + (i % 2 ? 1 : -1) * rng2(F)) }, x) || !isFinite(f)) { yield { info: info + '<p class="warn">Divergió: el punto salió del dominio. Reduce η.</p>', end: true, stop: true }; return; }
+      if (gn < 1e-5) { yield { info: info + '<p class="ok">Convergió: ‖∇f‖ ≈ 0 (punto crítico).</p>', end: true, stop: true }; return; }
+      yield { info, end: true };
+    }
+  }
+};
+
+/* ---------------- 2. Newton en una variable ---------------- */
+ALG.newton = {
+  nombre: 'Método de Newton', kind: '1d', click: true, funcs1d: ['expo', 'cuartica'],
+  params: () => [{ k: 'eta', l: 'η del gradiente (comparación)', min: 0.05, max: 1, step: 0.05, v: 0.5 }],
+  *gen(G, P, R, S, ev) {
+    const d1 = x => (G.f(x + 1e-5) - G.f(x - 1e-5)) / 2e-5, d2 = x => (G.f(x + 1e-4) - 2 * G.f(x) + G.f(x - 1e-4)) / 1e-8;
+    let x = P.start ?? G.start, xg = x; const rows = [[0, x, xg]];
+    ev(x); S.iter = 0; setBest(S, x, G.f(x));
+    const tabla = () => `<table class="mini"><tr><th>k</th><th>x Newton</th><th>error</th><th>x gradiente</th><th>error</th></tr>` +
+      rows.map(r => `<tr><td>${r[0]}</td><td>${fm(r[1], 4)}</td><td>${fm(Math.abs(r[1] - G.opt), 4)}</td><td>${fm(r[2], 4)}</td><td>${fm(Math.abs(r[2] - G.opt), 4)}</td></tr>`).join('') + '</table>';
+    const scene = (extra = []) => {
+      S.pts = [{ p: [x, G.f(x)], c: C.gold, r: 6, label: 'Newton' }, { p: [xg, G.f(xg)], c: C.cyan, r: 5, label: 'gradiente', lc: C.cyan }, ...extra];
+    };
+    scene(); S.paths = [];
+    yield { info: op('Inicio', `x${sb(0)} = ${fm(x, 4)}`) + `<p>Newton: ${mono('x<sub>k+1</sub> = x<sub>k</sub> − f′(x<sub>k</sub>)/f″(x<sub>k</sub>)')}. En dorado Newton, en cian el gradiente con η = ${P.eta}. Clic en la gráfica para mover x₀.</p>` + tabla(), end: true };
+    for (let k = 0; k < 40; k++) {
+      const a = d1(x), b = d2(x), fx = G.f(x); ev(x);
+      const q = t => fx + a * (t - x) + 0.5 * b * (t - x) ** 2, span = (G.b - G.a) * 0.35, pts = [];
+      for (let i = 0; i <= 60; i++) { const t = x - span + 2 * span * i / 60; pts.push([t, q(t)]); }
+      S.paths = [{ p: pts, c: C.mag, w: 2, dash: true }];
+      const nx = x - a / b;
+      scene(b > 0 ? [{ p: [nx, q(nx)], c: C.mag, r: 4, label: 'mín. del modelo', lc: C.mag }] : []);
+      yield { info: op('1 · Modelo cuadrático', `f′(x${sb(k)}) = ${fm(a, 4)}, f″(x${sb(k)}) = ${fm(b, 4)}`) +
+        `<p>La parábola rosa es ${mono('q(x) = f(x<sub>k</sub>) + f′·(x − x<sub>k</sub>) + ½f″·(x − x<sub>k</sub>)²')}. Newton salta a su vértice.${b < 0 ? ' <span class="warn">f″ &lt; 0: la parábola abre hacia abajo y Newton se va hacia un máximo.</span>' : ''}</p>` + tabla() };
+      const ox = x; x = nx; xg = xg - P.eta * d1(xg); ev(x); ev(xg); rows.push([k + 1, x, xg]); S.iter = k + 1; setBest(S, x, G.f(x));
+      S.paths = []; scene([{ p: [ox, G.f(ox)], c: C.faint, r: 3 }]);
+      const info = op('2 · Salto', `x${sb(k + 1)} = ${fm(ox, 4)} − ${fm(a, 4)}/${fm(b, 4)} = <b>${fm(x, 4)}</b>`) + tabla();
+      if (Math.abs(a) < 1e-9 || Math.abs(x - ox) < 1e-10) { yield { info: info + '<p class="ok">Convergió: el error se eleva casi al cuadrado en cada paso (convergencia cuadrática).</p>', end: true, stop: true }; return; }
+      yield { info, end: true };
+    }
+  }
+};
+
+/* ---------------- 3. BFGS ---------------- */
+ALG.bfgs = {
+  nombre: 'BFGS (cuasi-Newton)', kind: '2d', click: true, funcs: ['rosenbrock', 'booth', 'himmelblau', 'esfera', 'rastrigin'],
+  params: () => [],
+  *gen(F, P, R, S, ev) {
+    let x = (P.start || F.start).slice(), f = ev(...x), g = grad(F, x), H = [[1, 0], [0, 1]];
+    let xg = x.slice(); const path = [x.slice()], gpath = [xg.slice()], hist = [f], ghist = [f];
+    S.iter = 0; setBest(S, x, f);
+    S.paths = [{ p: gpath, c: C.cyan, w: 1.6, al: 0.8 }, { p: path, c: C.gold, w: 2.4, dots: true }];
+    S.pts = [{ p: x, c: C.w, r: 6 }]; S.spark = { data: hist, data2: ghist, label: 'f: BFGS (dorado) vs gradiente (cian)' };
+    const Hs = () => `H = [[${fm(H[0][0])}, ${fm(H[0][1])}], [${fm(H[1][0])}, ${fm(H[1][1])}]]`;
+    yield { info: op('Inicio', `x${sb(0)} = ${pv(x)}, H${sb(0)} = I`) + '<p>BFGS aproxima la inversa de la Hessiana con los gradientes. En cian, el descenso de gradiente con η fija para comparar.</p>', end: true };
+    for (let k = 0; k < 200; k++) {
+      const p = [-(H[0][0] * g[0] + H[0][1] * g[1]), -(H[1][0] * g[0] + H[1][1] * g[1])], gp = g[0] * p[0] + g[1] * p[1];
+      let a = 1, nx, nf, tries = 0;
+      while (true) { nx = add(x, mul(p, a)); nf = ev(...nx); tries++; if (nf <= f + 1e-4 * a * gp || tries > 30) break; a *= 0.5; }
+      S.segs = [{ a: x, b: nx, c: C.coral, w: 2.6, head: true, label: 'α·p' }];
+      yield { info: op('1 · Dirección y búsqueda lineal', `p = −H∇f = ${pv(p)}`) + `<p>Se prueba α = 1, ½, ¼, … hasta que f baja lo suficiente (Armijo): α = <b>${fm(a, 4)}</b> tras ${tries} prueba(s).</p>` };
+      const ng = grad(F, nx), s = sub(nx, x), y = sub(ng, g), ys = y[0] * s[0] + y[1] * s[1];
+      if (ys > 1e-12) {
+        const r = 1 / ys, A = [[1 - r * s[0] * y[0], -r * s[0] * y[1]], [-r * s[1] * y[0], 1 - r * s[1] * y[1]]];
+        const AH = [[A[0][0] * H[0][0] + A[0][1] * H[1][0], A[0][0] * H[0][1] + A[0][1] * H[1][1]], [A[1][0] * H[0][0] + A[1][1] * H[1][0], A[1][0] * H[0][1] + A[1][1] * H[1][1]]];
+        H = [[AH[0][0] * A[0][0] + AH[0][1] * A[0][1] + r * s[0] * s[0], AH[0][0] * A[1][0] + AH[0][1] * A[1][1] + r * s[0] * s[1]],
+        [AH[1][0] * A[0][0] + AH[1][1] * A[0][1] + r * s[1] * s[0], AH[1][0] * A[1][0] + AH[1][1] * A[1][1] + r * s[1] * s[1]]];
+      }
+      x = nx; f = nf; g = ng; path.push(x.slice()); hist.push(f); S.iter = k + 1; setBest(S, x, f);
+      const gg = grad(F, xg); xg = add(xg, mul(gg, -F.eta)); gpath.push(xg.slice()); ghist.push(F.f(...xg));
+      S.segs = []; S.pts = [{ p: x, c: C.w, r: 6 }, { p: xg, c: C.cyan, r: 4 }];
+      const info = op('2 · Actualizar H', `s = ${pv(s)}, y = ${pv(y)}`) + `<p>${mono(Hs())}</p><p>x${sb(k + 1)} = ${pv(x)}, f = ${fm(f)} · gradiente fijo: f = ${fm(ghist[ghist.length - 1])}</p>`;
+      if (Math.hypot(...g) < 1e-6) { yield { info: info + `<p class="ok">Convergió en ${k + 1} iteraciones.</p>`, end: true, stop: true }; return; }
+      yield { info, end: true };
+    }
+  }
+};
+
+/* ---------------- 4. Búsqueda aleatoria ---------------- */
+ALG.aleatoria = {
+  nombre: 'Búsqueda aleatoria', kind: '2d', funcs: ['rastrigin', 'ackley', 'himmelblau', 'schwefel', 'esfera'],
+  params: () => [{ k: 'lote', l: 'Muestras por iteración', min: 1, max: 50, step: 1, v: 10 }],
+  *gen(F, P, R, S, ev) {
+    const all = [], imp = []; S.iter = 0; S.pts = []; const hist = [];
+    S.spark = { data: hist };
+    yield { info: op('Idea', 'Generar x ∼ U(S) y quedarse con el mejor') + '<p>No usa información de los puntos anteriores. Sirve como línea base para comparar.</p>', end: true };
+    for (let k = 0; k < 100000; k++) {
+      const x = randIn(F, R), f = ev(...x); all.push(x);
+      const mejora = !S.best || f < S.best.f; setBest(S, x, f); if (mejora) imp.push(x); hist.push(S.best.f);
+      if ((k + 1) % P.lote === 0 || k === 0) {
+        S.iter = Math.ceil((k + 1) / P.lote);
+        S.pts = [...all.slice(-400).map(p => ({ p, c: 'rgba(245,243,255,.55)', r: 2 })), { p: x, c: C.coral, r: 5 }, { p: S.best.p, c: C.gold, star: true, r: 6 }];
+        S.paths = [{ p: imp, c: C.gold, w: 1.4, dash: true, al: 0.8 }];
+        yield { info: op('Muestra ' + (k + 1), `x = ${pv(x)}, f(x) = ${fm(f)}`) + `<p>${mejora ? '<span class="ok">Mejora: se guarda como el mejor.</span>' : 'No mejora al mejor actual.'} Mejor hasta ahora: f = ${fm(S.best.f)} en ${pv(S.best.p)}.</p><p>La línea punteada une las mejoras sucesivas.</p>`, end: true };
+      }
+    }
+  }
+};
+
+/* ---------------- 5. Ascenso de colina ---------------- */
+ALG.colina = {
+  nombre: 'Ascenso de colina', kind: '2d', click: true, funcs: ['rastrigin', 'ackley', 'himmelblau', 'booth', 'griewank'],
+  params: F => [{ k: 'sigma', l: 'σ del vecino', min: rng2(F) / 200, max: rng2(F) / 8, step: rng2(F) / 400, v: rng2(F) / 40 }],
+  *gen(F, P, R, S, ev) {
+    let x = (P.start || F.start).slice(), f = ev(...x), fails = 0; const path = [x.slice()], hist = [f];
+    S.iter = 0; setBest(S, x, f); S.paths = [{ p: path, c: C.gold, w: 2, dots: true }]; S.spark = { data: hist, label: 'f(x)' };
+    S.pts = [{ p: x, c: C.w, r: 6 }]; S.circles = [{ p: x, R: 2 * P.sigma, c: C.mute }];
+    yield { info: op('Inicio', `x = ${pv(x)}, f = ${fm(f)}`) + `<p>Vecino ${mono('y = x + σ·N(0, 1)')}; se acepta solo si mejora. El círculo marca ±2σ.</p>`, end: true };
+    for (let k = 0; k < 100000; k++) {
+      const y = clampP(F, [x[0] + P.sigma * R.n(), x[1] + P.sigma * R.n()]), fy = ev(...y), ok = fy < f;
+      S.iter = k + 1;
+      S.pts = [{ p: x, c: C.w, r: 6 }, { p: y, c: ok ? C.lime : C.coral, r: 5, label: ok ? 'acepta' : 'rechaza' }];
+      S.segs = [{ a: x, b: y, c: ok ? C.lime : C.coral, w: 1.6, dash: !ok }];
+      const info = op('Vecino ' + (k + 1), `y = ${pv(y)}, f(y) = ${fm(fy)} vs f(x) = ${fm(f)}`) +
+        `<p>${ok ? '<span class="ok">f(y) &lt; f(x): x ← y.</span>' : 'f(y) ≥ f(x): se rechaza.'} Intentos seguidos sin mejora: <b>${ok ? 0 : fails + 1}</b>.</p>`;
+      if (ok) { x = y; f = fy; fails = 0; path.push(x.slice()); } else fails++;
+      hist.push(f); setBest(S, x, f); S.circles = [{ p: x, R: 2 * P.sigma, c: C.mute }];
+      if (fails >= 80) { yield { info: info + '<p class="warn">80 vecinos seguidos sin mejora: se quedó en un mínimo local.</p>', end: true, stop: true }; return; }
+      yield { info, end: true };
+    }
+  }
+};
+
+/* ---------------- 6. Nelder–Mead ---------------- */
+ALG.nelder = {
+  nombre: 'Nelder–Mead (símplex)', kind: '2d', click: true, funcs: ['himmelblau', 'rosenbrock', 'booth', 'rastrigin', 'ackley', 'easom'],
+  params: F => [{ k: 'lado', l: 'Tamaño del símplex inicial', min: rng2(F) / 50, max: rng2(F) / 4, step: rng2(F) / 200, v: rng2(F) / 10 }],
+  *gen(F, P, R, S, ev) {
+    const s0 = (P.start || F.start).slice();
+    let V = [s0, [s0[0] + P.lado, s0[1]], [s0[0], s0[1] + P.lado]].map(p => ({ p, f: ev(...p) }));
+    const ghosts = [], hist = []; S.iter = 0;
+    const draw = (extra = [], segs = []) => {
+      S.paths = [...ghosts.slice(-25).map(g => ({ p: g, c: 'rgba(245,243,255,.25)', w: 1, closed: true })), { p: V.map(v => v.p), c: C.gold, w: 2.4, closed: true, fill: 'rgba(255,201,77,.15)' }];
+      S.pts = [...V.map((v, i) => ({ p: v.p, c: i === 0 ? C.lime : i === 2 ? C.coral : C.w, r: 5, label: ['B mejor', 'M', 'W peor'][i] })), ...extra]; S.segs = segs;
+    };
+    V.sort((a, b) => a.f - b.f); setBest(S, V[0].p, V[0].f); hist.push(V[0].f); S.spark = { data: hist };
+    draw();
+    yield { info: op('Inicio', 'Símplex de 3 vértices') + `<p>f = ${V.map(v => fm(v.f)).join(', ')}. Coeficientes: α = 1, γ = 2, ρ = 0.5, σ = 0.5.</p>`, end: true };
+    for (let k = 0; k < 2000; k++) {
+      V.sort((a, b) => a.f - b.f); draw();
+      yield { info: op('1 · Ordenar', `B = ${pv(V[0].p)} (f = ${fm(V[0].f)}), M = ${pv(V[1].p)} (f = ${fm(V[1].f)}), W = ${pv(V[2].p)} (f = ${fm(V[2].f)})`) };
+      const c = mul(add(V[0].p, V[1].p), 0.5), xr = add(c, sub(c, V[2].p)), fr = ev(...xr);
+      draw([{ p: c, c: C.cyan, r: 4, label: 'c' }, { p: xr, c: C.mag, r: 5, label: 'xr' }], [{ a: V[2].p, b: xr, c: C.mag, w: 1.6, dash: true, head: true }]);
+      yield { info: op('2 · Centroide y reflexión', `c = ${pv(c)}, x${sb('r')} = c + (c − W) = ${pv(xr)}, f${sb('r')} = ${fm(fr)}`) };
+      ghosts.push(V.map(v => v.p)); let msg, extra = [];
+      if (fr < V[0].f) {
+        const xe = add(c, mul(sub(xr, c), 2)), fe = ev(...xe); extra = [{ p: xe, c: C.lime, r: 5, label: 'xe' }];
+        if (fe < fr) { V[2] = { p: xe, f: fe }; msg = `f${sb('r')} &lt; f(B): se prueba la <b>expansión</b> x${sb('e')} = ${pv(xe)}, f${sb('e')} = ${fm(fe)} &lt; f${sb('r')}: se acepta x${sb('e')}.`; }
+        else { V[2] = { p: xr, f: fr }; msg = `f${sb('r')} &lt; f(B): expansión x${sb('e')} = ${pv(xe)} con f${sb('e')} = ${fm(fe)} no mejora; se queda la <b>reflexión</b>.`; }
+      } else if (fr < V[1].f) { V[2] = { p: xr, f: fr }; msg = `f(B) ≤ f${sb('r')} &lt; f(M): se acepta la <b>reflexión</b>.`; }
+      else {
+        const xc = add(c, mul(sub(V[2].p, c), 0.5)), fc = ev(...xc); extra = [{ p: xc, c: C.vio, r: 5, label: 'xc' }];
+        if (fc < V[2].f) { V[2] = { p: xc, f: fc }; msg = `f${sb('r')} ≥ f(M): <b>contracción</b> x${sb('c')} = c + ρ(W − c) = ${pv(xc)}, f${sb('c')} = ${fm(fc)} &lt; f(W): se acepta.`; }
+        else {
+          for (let i = 1; i < 3; i++) { const p = add(V[0].p, mul(sub(V[i].p, V[0].p), 0.5)); V[i] = { p, f: ev(...p) }; }
+          msg = 'La contracción falla: <b>encogimiento</b> de todos los vértices hacia B.';
+        }
+      }
+      V.sort((a, b) => a.f - b.f); setBest(S, V[0].p, V[0].f); hist.push(V[0].f); S.iter = k + 1; draw(extra);
+      const size = Math.max(dist(V[0].p, V[1].p), dist(V[0].p, V[2].p));
+      const info = op('3 · Decidir', msg) + `<p>Nuevo símplex con f = ${V.map(v => fm(v.f)).join(', ')}.</p>`;
+      if (size < 1e-7 * rng2(F)) { yield { info: info + '<p class="ok">El símplex se encogió a un punto: terminó.</p>', end: true, stop: true }; return; }
+      yield { info, end: true };
+    }
+  }
+};
+
+/* ---------------- 7. Recocido simulado ---------------- */
+ALG.recocido = {
+  nombre: 'Recocido simulado', kind: '2d', click: true, funcs: ['rastrigin', 'ackley', 'himmelblau', 'schwefel', 'griewank'],
+  params: F => [{ k: 'T0', l: 'Temperatura inicial T₀', min: 0.5, max: 50, step: 0.5, v: 10 },
+  { k: 'alfa', l: 'Enfriamiento α', min: 0.9, max: 0.999, step: 0.001, v: 0.98 },
+  { k: 'sigma', l: 'σ del vecino', min: rng2(F) / 200, max: rng2(F) / 8, step: rng2(F) / 400, v: rng2(F) / 25 }],
+  *gen(F, P, R, S, ev) {
+    let x = (P.start || F.start).slice(), f = ev(...x), T = P.T0; const path = [x.slice()], hist = [f], best = [f];
+    S.iter = 0; setBest(S, x, f); S.paths = [{ p: path, c: C.gold, w: 1.4, al: 0.7 }]; S.spark = { data: best, data2: hist, label: 'mejor (dorado) y actual (cian)' };
+    S.pts = [{ p: x, c: C.w, r: 6 }];
+    yield { info: op('Inicio', `x = ${pv(x)}, f = ${fm(f)}, T = ${fm(T)}`) + `<p>Criterio de Metropolis: un vecino peor (Δ &gt; 0) se acepta con P = e<sup>−Δ/T</sup>. Enfriamiento ${mono('T<sub>k+1</sub> = αT<sub>k</sub>')}.</p>`, end: true };
+    for (let k = 0; k < 100000; k++) {
+      const y = clampP(F, [x[0] + P.sigma * R.n(), x[1] + P.sigma * R.n()]), fy = ev(...y), D = fy - f;
+      const Pa = D <= 0 ? 1 : Math.exp(-D / T), r = R.u(), acc = r < Pa;
+      S.iter = k + 1; S.extra = `T = <b>${fm(T)}</b>`;
+      S.pts = [{ p: x, c: C.w, r: 6 }, { p: y, c: acc ? C.lime : C.coral, r: 5, label: acc ? (D > 0 ? 'acepta (peor)' : 'acepta') : 'rechaza' }, ...(S.best ? [{ p: S.best.p, c: C.gold, star: true, r: 5 }] : [])];
+      S.segs = [{ a: x, b: y, c: acc ? C.lime : C.coral, w: 1.6, dash: !acc }];
+      const info = op('Iteración ' + (k + 1), `T = ${fm(T)}, Δ = f(y) − f(x) = ${fm(fy)} − ${fm(f)} = <b>${fm(D)}</b>`) +
+        `<p>P = ${D <= 0 ? '1 (mejora)' : `e<sup>−${fm(D)}/${fm(T)}</sup> = <b>${fm(Pa)}</b>`}, r = ${fm(r)} → ${acc ? '<span class="ok">se acepta</span>' : '<span class="warn">se rechaza</span>'}${acc && D > 0 ? ' aunque es peor: así escapa de mínimos locales.' : '.'}</p>`;
+      if (acc) { x = y; f = fy; path.push(x.slice()); if (path.length > 600) path.shift(); }
+      setBest(S, x, f); hist.push(f); best.push(S.best.f); T *= P.alfa;
+      if (T < 1e-4) { yield { info: info + '<p class="ok">La temperatura llegó casi a cero: ya solo acepta mejoras.</p>', end: true, stop: true }; return; }
+      yield { info, end: true };
+    }
+  }
+};
+
+/* ---------------- 8. AG binario ---------------- */
+const bitsStr = (b, cls) => b.map((v, i) => cls && cls[i] ? `<span class="${cls[i]}">${v}</span>` : v).join('');
+ALG.agbin = {
+  nombre: 'AG binario', kind: '1d', funcs1d: ['ondas'],
+  params: () => [{ k: 'N', l: 'Población N', min: 4, max: 12, step: 2, v: 8 }, { k: 'pc', l: 'Prob. de cruza pc', min: 0, max: 1, step: 0.05, v: 0.8 }, { k: 'pmK', l: 'Prob. de mutación pm × L', min: 0, max: 4, step: 0.25, v: 1 }],
+  *gen(G, P, R, S, ev) {
+    const L = 12, N = P.N, pm = P.pmK / L, M = 2 ** L - 1;
+    const dec = b => b.reduce((a, v) => a * 2 + v, 0), xOf = b => G.a + dec(b) * (G.b - G.a) / M;
+    let pop = Array.from({ length: N }, () => Array.from({ length: L }, () => R.int(2)));
+    let fit = pop.map(b => ev(xOf(b))); const hist = [];
+    S.iter = 0; S.iterLabel = 'Generación';
+    const showPop = (lbl = true) => { S.pts = pop.map((b, i) => ({ p: [xOf(b), G.f(xOf(b))], c: HUES[i % 16], r: 5, label: lbl ? String(i + 1) : '' })); };
+    const tabla = (cols, rows) => `<table class="mini"><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</table>`;
+    const upd = () => { fit.forEach((f, i) => setBest(S, xOf(pop[i]), f, true)); hist.push(S.best.f); S.spark = { data: hist, label: 'mejor f', log: false }; };
+    upd(); showPop();
+    yield { info: op('Población inicial', `N = ${N}, L = ${L} bits, x = a + entero·(b − a)/(2<sup>L</sup> − 1)`) +
+      tabla(['#', 'cromosoma', 'entero', 'x', 'f(x)'], pop.map((b, i) => [`<span style="color:${HUES[i]}">${i + 1}</span>`, `<span class="bits">${bitsStr(b)}</span>`, dec(b), fm(xOf(b), 4), fm(fit[i], 4)])), end: true };
+    for (let gen = 1; gen < 100000; gen++) {
+      const fmin = Math.min(...fit), Fp = fit.map(f => f - fmin + 0.01), tot = Fp.reduce((a, b) => a + b, 0), pr = Fp.map(v => v / tot);
+      const acc = []; pr.reduce((a, v, i) => (acc[i] = a + v), 0);
+      const rs = Array.from({ length: N }, () => R.u()), sel = rs.map(r => { const i = acc.findIndex(a => r <= a); return i < 0 ? N - 1 : i; });
+      S.pie = { vals: Fp, cols: HUES.slice(0, N), r: rs }; showPop();
+      yield { info: op('1 · Selección por ruleta', `Aptitud ajustada F′ = f − mín f + 0.01 (la ruleta necesita F′ ≥ 0)`) +
+        tabla(['#', 'f(x)', 'F′', 'p = F′/ΣF′', 'acumulada'], pop.map((b, i) => [`<span style="color:${HUES[i]}">${i + 1}</span>`, fm(fit[i], 3), fm(Fp[i], 3), fm(pr[i], 3), fm(acc[i], 3)])) +
+        `<p>Números r: ${rs.map((r, i) => `${fm(r, 2)}→<b style="color:${HUES[sel[i]]}">${sel[i] + 1}</b>`).join(', ')}. Las marcas blancas en la ruleta son los r.</p>` };
+      const parents = sel.map(i => pop[i].slice()), kids = [], cls = [], lines = [];
+      for (let i = 0; i < N; i += 2) {
+        const a = parents[i], b = parents[i + 1], rc = R.u();
+        if (rc < P.pc) {
+          const cut = 1 + R.int(L - 1);
+          kids.push([...a.slice(0, cut), ...b.slice(cut)], [...b.slice(0, cut), ...a.slice(cut)]);
+          cls.push([...Array(cut).fill('pa'), ...Array(L - cut).fill('pb')], [...Array(cut).fill('pb'), ...Array(L - cut).fill('pa')]);
+          lines.push(`<tr><td>${sel[i] + 1} × ${sel[i + 1] + 1}</td><td>${fm(rc, 2)} &lt; ${P.pc}: corte tras el gen ${cut}</td><td class="bits">${bitsStr(a.slice(0, cut), Array(cut).fill('pa'))}|${bitsStr(a.slice(cut), Array(L - cut).fill('pa'))}<br>${bitsStr(b.slice(0, cut), Array(cut).fill('pb'))}|${bitsStr(b.slice(cut), Array(L - cut).fill('pb'))}</td><td class="bits">${bitsStr(kids[i], cls[i])}<br>${bitsStr(kids[i + 1], cls[i + 1])}</td></tr>`);
+        } else {
+          kids.push(a.slice(), b.slice()); cls.push(Array(L).fill('pa'), Array(L).fill('pb'));
+          lines.push(`<tr><td>${sel[i] + 1} × ${sel[i + 1] + 1}</td><td>${fm(rc, 2)} ≥ ${P.pc}: sin cruza</td><td class="bits">${bitsStr(a)}<br>${bitsStr(b)}</td><td class="bits">${bitsStr(kids[i], cls[i])}<br>${bitsStr(kids[i + 1], cls[i + 1])}</td></tr>`);
+        }
+      }
+      S.pie = { vals: Fp, cols: HUES.slice(0, N), r: rs };
+      S.pts = kids.map((b, i) => ({ p: [xOf(b), G.f(xOf(b))], c: C.w, r: 4, hollow: true }));
+      yield { info: op('2 · Cruza de un punto', `parejas (1.º con 2.º, 3.º con 4.º, …), pc = ${P.pc}`) + `<table class="mini bitsT"><tr><th>pareja</th><th>decisión</th><th>padres</th><th>hijos</th></tr>${lines.join('')}</table><p><span class="pa">dorado</span>: genes del primer padre · <span class="pb">cian</span>: del segundo.</p>` };
+      const mcls = kids.map(() => Array(L).fill('')); let flips = 0;
+      kids.forEach((b, i) => b.forEach((v, j) => { if (R.u() < pm) { b[j] = 1 - v; mcls[i][j] = 'mu'; flips++; } }));
+      const kfit = kids.map(b => ev(xOf(b)));
+      S.pie = null; S.pts = kids.map((b, i) => ({ p: [xOf(b), G.f(xOf(b))], c: C.w, r: 4, hollow: true }));
+      yield { info: op('3 · Mutación bit a bit', `pm = ${fm(pm, 3)} ≈ ${P.pmK}/L: ${flips} bit(s) invertidos (en rosa)`) +
+        tabla(['hijo', 'cromosoma', 'x', 'f(x)'], kids.map((b, i) => [i + 1, `<span class="bits">${bitsStr(b, mcls[i])}</span>`, fm(xOf(b), 4), fm(kfit[i], 4)])) };
+      const bi = fit.indexOf(Math.max(...fit)), wi = kfit.indexOf(Math.min(...kfit)), eliteNeeded = Math.max(...kfit) < fit[bi];
+      if (eliteNeeded) { kids[wi] = pop[bi].slice(); kfit[wi] = fit[bi]; }
+      const prom0 = fit.reduce((a, b) => a + b, 0) / N; pop = kids; fit = kfit; upd(); S.iter = gen; showPop();
+      const prom1 = fit.reduce((a, b) => a + b, 0) / N;
+      yield { info: op('4 · Elitismo y reemplazo', eliteNeeded ? `El mejor padre (f = ${fm(fit[wi], 4)}) reemplaza al peor hijo.` : 'Un hijo ya supera al mejor padre: no hace falta copiar la élite.') +
+        `<p>Aptitud promedio: ${fm(prom0, 4)} → <b>${fm(prom1, 4)}</b>. Mejor: f = ${fm(S.best.f, 4)} en x = ${fm(S.best.p, 4)}.</p>`, end: true };
+    }
+  }
+};
+
+/* ---------------- 9. AG real ---------------- */
+ALG.agreal = {
+  nombre: 'AG con codificación real', kind: '2d', funcs: ['rastrigin', 'ackley', 'himmelblau', 'rosenbrock', 'schwefel', 'griewank'],
+  params: F => [{ k: 'N', l: 'Población N', min: 6, max: 40, step: 2, v: 16 }, { k: 'pm', l: 'Prob. de mutación por gen', min: 0, max: 0.6, step: 0.05, v: 0.2 },
+  { k: 'sigma', l: 'σ de la mutación', min: rng2(F) / 200, max: rng2(F) / 5, step: rng2(F) / 400, v: rng2(F) / 30 }, { k: 'elit', l: 'Elitismo (0 = no, 1 = sí)', min: 0, max: 1, step: 1, v: 1 }],
+  *gen(F, P, R, S, ev) {
+    let pop = Array.from({ length: P.N }, () => randIn(F, R)), fit = pop.map(p => ev(...p)); const hist = [];
+    S.iter = 0; S.iterLabel = 'Generación';
+    const showPop = (hi = []) => { S.pts = pop.map((p, i) => ({ p, c: hi.includes(i) ? C.gold : C.w, r: hi.includes(i) ? 6 : 4 })); };
+    const upd = () => { fit.forEach((f, i) => setBest(S, pop[i], f)); hist.push(S.best.f); S.spark = { data: hist }; };
+    const torneo = () => { const [a, b] = R.distinct(P.N, 2); return { a, b, w: fit[a] <= fit[b] ? a : b }; };
+    const child = (p1, p2) => { const l = R.u(); return [add(mul(p1, l), mul(p2, 1 - l)), add(mul(p1, 1 - l), mul(p2, l)), l]; };
+    const mutate = h => { const m = h.map(v => R.u() < P.pm ? v + P.sigma * R.n() : v); return clampP(F, m); };
+    upd(); showPop();
+    yield { info: op('Población inicial', `N = ${P.N} puntos al azar en el dominio`) + '<p>Cada individuo es directamente (x, y). Operadores: torneo binario, cruza aritmética, mutación gaussiana con recorte y elitismo.</p>', end: true };
+    for (let gen = 1; gen < 100000; gen++) {
+      const t1 = torneo(); showPop([t1.a, t1.b]); S.segs = [{ a: pop[t1.a], b: pop[t1.b], c: C.mute, w: 1, dash: true }]; S.pts.push({ p: pop[t1.w], c: C.gold, r: 6, ring: C.gold, label: 'p₁' });
+      yield { info: op('1 · Torneo binario (padre 1)', `individuos ${t1.a + 1} (f = ${fm(fit[t1.a])}) y ${t1.b + 1} (f = ${fm(fit[t1.b])})`) + `<p>Gana el de menor f: <b>${t1.w + 1}</b>.</p>` };
+      const t2 = torneo(); showPop([t2.a, t2.b]); S.segs = [{ a: pop[t2.a], b: pop[t2.b], c: C.mute, w: 1, dash: true }];
+      S.pts.push({ p: pop[t1.w], c: C.gold, r: 6, ring: C.gold, label: 'p₁' }, { p: pop[t2.w], c: C.cyan, r: 6, ring: C.cyan, label: 'p₂', lc: C.cyan });
+      yield { info: op('2 · Torneo binario (padre 2)', `individuos ${t2.a + 1} (f = ${fm(fit[t2.a])}) y ${t2.b + 1} (f = ${fm(fit[t2.b])})`) + `<p>Gana <b>${t2.w + 1}</b>.</p>` };
+      const p1 = pop[t1.w], p2 = pop[t2.w], [h1, h2, lam] = child(p1, p2);
+      showPop(); S.segs = [{ a: p1, b: p2, c: C.vio, w: 2 }];
+      S.pts.push({ p: p1, c: C.gold, r: 6, label: 'p₁' }, { p: p2, c: C.cyan, r: 6, label: 'p₂', lc: C.cyan }, { p: h1, c: C.mag, r: 5, label: 'h₁', lc: C.mag }, { p: h2, c: C.mag, r: 5, label: 'h₂', lc: C.mag });
+      yield { info: op('3 · Cruza aritmética', `λ = ${fm(lam)}`) + `<p>h₁ = λp₁ + (1 − λ)p₂ = <b>${pv(h1)}</b><br>h₂ = (1 − λ)p₁ + λp₂ = <b>${pv(h2)}</b></p><p>Los hijos siempre quedan sobre el segmento entre los padres.</p>` };
+      const m1 = mutate(h1); showPop(); S.segs = [{ a: h1, b: m1, c: C.lime, w: 2, head: true }];
+      S.pts.push({ p: h1, c: C.mag, r: 4 }, { p: m1, c: C.lime, r: 6, label: 'h₁ mutado', lc: C.lime });
+      yield { info: op('4 · Mutación gaussiana y recorte', `cada gen cambia con prob. ${P.pm}: x′ = x + N(0, σ²), σ = ${fm(P.sigma)}`) + `<p>${pv(h1)} → <b>${pv(m1)}</b>${m1[0] === h1[0] && m1[1] === h1[1] ? ' (no le tocó mutación)' : ''}. Si sale del dominio se recorta al borde.</p>` };
+      const kids = [m1, mutate(h2)];
+      while (kids.length < P.N) { const a = torneo().w, b = torneo().w, [c1, c2] = child(pop[a], pop[b]); kids.push(mutate(c1)); if (kids.length < P.N) kids.push(mutate(c2)); }
+      const kf = kids.map(p => ev(...p)), bi = fit.indexOf(Math.min(...fit));
+      let msg = 'Sin elitismo: la nueva generación son solo los hijos.';
+      if (P.elit) { const wi = kf.indexOf(Math.max(...kf)); kids[wi] = pop[bi].slice(); kf[wi] = fit[bi]; msg = `Elitismo: el mejor de la generación anterior (f = ${fm(fit[bi])}) sustituye al peor hijo.`; }
+      pop = kids; fit = kf; S.iter = gen; upd(); showPop(); S.segs = []; S.pts.push({ p: S.best.p, c: C.gold, star: true, r: 6 });
+      yield { info: op('5 · Resto de la generación', `se repiten torneo, cruza y mutación hasta tener ${P.N} hijos`) + `<p>${msg} Mejor f = ${fm(S.best.f)}.</p>`, end: true };
+    }
+  }
+};
+
+/* ---------------- 10. AG de permutaciones (agente viajero) ---------------- */
+function cities(n, seed) { const R = new Rng(seed); const c = []; let md = 0.12, t = 0; while (c.length < n) { const p = [R.u(0.06, 0.94), R.u(0.06, 0.94)]; if (c.every(q => dist(p, q) > md)) c.push(p); if (++t % 2000 === 0) md *= 0.85; } return c; }
+const tourLen = (t, D) => t.reduce((a, c, i) => a + D[c][t[(i + 1) % t.length]], 0);
+const cells = (arr, cls) => `<span class="perm">${arr.map((v, i) => `<i class="${cls ? cls[i] || '' : ''}">${v === null ? '_' : v}</i>`).join('')}</span>`;
+ALG.agperm = {
+  nombre: 'AG para permutaciones', kind: 'tsp',
+  params: () => [{ k: 'n', l: 'Ciudades', min: 6, max: 20, step: 1, v: 12 }, { k: 'N', l: 'Población', min: 10, max: 60, step: 2, v: 30 }, { k: 'pm', l: 'Prob. de mutación', min: 0, max: 1, step: 0.05, v: 0.3 }],
+  *gen(_, P, R, S, ev) {
+    const X = P.cities || cities(P.n, 11 + P.n), D = X.map(a => X.map(b => dist(a, b))), n = X.length;
+    let pop = Array.from({ length: P.N }, () => R.perm(n)), fit = pop.map(t => ev(tourLen(t, D))); const hist = [];
+    S.iter = 0; S.iterLabel = 'Generación';
+    const route = (t, c, w, al = 1, dash) => ({ p: t.map(i => X[i]), c, w, closed: true, al, dash });
+    const cityPts = () => X.map((p, i) => ({ p, c: i === 0 && P.names ? C.gold : C.w, r: i === 0 && P.names ? 7 : 5, label: P.names ? P.names[i] : String(i) }));
+    const upd = () => { fit.forEach((f, i) => { if (!S.best || f < S.best.f) S.best = { p: pop[i].slice(), f }; }); hist.push(S.best.f); S.spark = { data: hist, label: 'mejor ruta', log: false }; };
+    const torneo = () => { const c = R.distinct(P.N, 3); return c.reduce((a, b) => fit[a] <= fit[b] ? a : b); };
+    const OX = (p1, p2, a, b) => { const h = Array(n).fill(null); for (let i = a; i <= b; i++) h[i] = p1[i]; let k = 0; for (const g of p2) { if (h.includes(g)) continue; while (h[k] !== null) k++; h[k] = g; } return h; };
+    upd(); S.paths = [route(S.best.p, C.gold, 2.4)]; S.pts = cityPts();
+    yield { info: op('Población inicial', `${P.N} rutas al azar sobre ${n} ciudades`) + '<p>Cada cromosoma es una permutación: el orden de visita. Cruza de orden (OX) y mutación por intercambio: nunca se repiten ciudades.</p>', end: true };
+    for (let gen = 1; gen < 100000; gen++) {
+      const i1 = torneo(), i2 = torneo(), p1 = pop[i1], p2 = pop[i2];
+      S.paths = [route(p1, C.gold, 2, 0.75), route(p2, C.cyan, 2, 0.75, true)]; S.pts = cityPts();
+      yield { info: op('1 · Selección por torneo (k = 3)', `p₁ longitud ${fm(fit[i1])}, p₂ longitud ${fm(fit[i2])}`) + `<p>p₁ ${cells(p1)}<br>p₂ ${cells(p2)}</p>` };
+      let a = R.int(n), b = R.int(n); if (a > b) [a, b] = [b, a];
+      const h = OX(p1, p2, a, b), hc = h.map((v, i) => i >= a && i <= b ? 'a' : 'b'), seg = Array(n).fill(null).map((_, i) => i >= a && i <= b ? p1[i] : null);
+      S.paths = [route(p1, C.gold, 1.4, 0.35), route(p2, C.cyan, 1.4, 0.35, true), route(h, C.mag, 2.6)];
+      yield { info: op('2 · Cruza de orden (OX)', `segmento de p₁ en las posiciones ${a} a ${b}`) +
+        `<p>p₁ ${cells(p1, p1.map((_, i) => i >= a && i <= b ? 'a' : ''))}<br>p₂ ${cells(p2, p2.map(g => seg.includes(g) ? 'x' : 'b'))}<br>paso 1 ${cells(seg, seg.map(v => v === null ? '' : 'a'))}<br>hijo ${cells(h, hc)}</p><p>Se copia el segmento de p₁ y se completan los huecos con p₂ en su orden, saltando las ciudades ya usadas (tachadas).</p>` };
+      let m = h.slice(), sw = null;
+      if (R.u() < P.pm) { const [i, j] = R.distinct(n, 2); [m[i], m[j]] = [m[j], m[i]]; sw = [i, j]; }
+      S.paths = [route(m, C.lime, 2.6)];
+      yield { info: op('3 · Mutación por intercambio', sw ? `se intercambian las posiciones ${sw[0]} y ${sw[1]}` : 'no le tocó mutación') + `<p>${cells(m, m.map((_, i) => sw && sw.includes(i) ? 'm' : ''))} · longitud ${fm(tourLen(m, D))}</p>` };
+      const kids = [m]; while (kids.length < P.N) { const q1 = pop[torneo()], q2 = pop[torneo()]; let x = R.int(n), y = R.int(n); if (x > y) [x, y] = [y, x]; let c = OX(q1, q2, x, y); if (R.u() < P.pm) { const [i, j] = R.distinct(n, 2); [c[i], c[j]] = [c[j], c[i]]; } kids.push(c); }
+      const kf = kids.map(t => ev(tourLen(t, D))), order = fit.map((f, i) => i).sort((u, v) => fit[u] - fit[v]), korder = kf.map((f, i) => i).sort((u, v) => kf[v] - kf[u]);
+      for (let e = 0; e < 2; e++) { kids[korder[e]] = pop[order[e]].slice(); kf[korder[e]] = fit[order[e]]; }
+      pop = kids; fit = kf; S.iter = gen; upd(); S.paths = [route(S.best.p, C.gold, 2.6)];
+      yield { info: op('4 · Resto de la generación y elitismo', 'las 2 mejores rutas pasan sin cambio') + `<p>Mejor ruta: <b>${fm(S.best.f, 4)}</b> ${cells(S.best.p)}</p>`, end: true };
+    }
+  }
+};
+
+/* ---------------- 11. PSO ---------------- */
+ALG.pso = {
+  nombre: 'Enjambre de partículas (PSO)', kind: '2d', funcs: ['rastrigin', 'ackley', 'himmelblau', 'rosenbrock', 'schwefel', 'griewank', 'easom'],
+  params: () => [{ k: 'N', l: 'Partículas', min: 4, max: 40, step: 1, v: 15 }, { k: 'w', l: 'Inercia w', min: 0, max: 1.2, step: 0.05, v: 0.7 }, { k: 'c1', l: 'Cognitiva c₁', min: 0, max: 3, step: 0.1, v: 1.5 }, { k: 'c2', l: 'Social c₂', min: 0, max: 3, step: 0.1, v: 1.5 }],
+  *gen(F, P, R, S, ev) {
+    const vmax = 0.2 * rng2(F), N = P.N;
+    let X = Array.from({ length: N }, () => randIn(F, R)), V = Array.from({ length: N }, () => [R.u(-vmax, vmax) / 2, R.u(-vmax, vmax) / 2]);
+    let fx = X.map(p => ev(...p)), Pb = X.map(p => p.slice()), fp = fx.slice(); const hist = [];
+    let gi = fp.indexOf(Math.min(...fp)), g = Pb[gi].slice(), fg = fp[gi];
+    S.iter = 0; setBest(S, g, fg); hist.push(fg); S.spark = { data: hist };
+    const sw = (hi = -1) => {
+      S.pts = [...Pb.map(p => ({ p, c: 'rgba(98,230,255,.7)', r: 2.5, hollow: true })), ...X.map((p, i) => ({ p, c: i === hi ? C.gold : C.w, r: i === hi ? 6 : 4 })), { p: g, c: C.gold, star: true, r: 7, label: 'g' }];
+      S.segs = X.map((p, i) => ({ a: p, b: add(p, V[i]), c: 'rgba(245,243,255,.45)', w: 1 }));
+    };
+    const clampV = v => v.map(c => Math.max(-vmax, Math.min(vmax, c)));
+    sw();
+    yield { info: op('Enjambre inicial', `${N} partículas con posición x y velocidad v`) + `<p>${mono('v ← w·v + c₁r₁(p − x) + c₂r₂(g − x)')}, ${mono('x ← x + v')}. Círculos cian: mejor posición de cada partícula (p). Estrella: mejor global (g).</p>`, end: true };
+    for (let it = 1; it < 100000; it++) {
+      const i = (it - 1) % N, x = X[i], r1 = R.u(), r2 = R.u();
+      const vi = mul(V[i], P.w), vc = mul(sub(Pb[i], x), P.c1 * r1), vs = mul(sub(g, x), P.c2 * r2), nv = clampV(add(add(vi, vc), vs));
+      sw(i); S.segs = [{ a: x, b: add(x, vi), c: C.vio, w: 2.4, head: true, label: 'inercia' }, { a: add(x, vi), b: add(add(x, vi), vc), c: C.cyan, w: 2.4, head: true, label: 'cognitiva' },
+      { a: add(add(x, vi), vc), b: add(add(add(x, vi), vc), vs), c: C.coral, w: 2.4, head: true, label: 'social' }, { a: x, b: add(x, nv), c: C.gold, w: 3, head: true }];
+      yield { info: op(`1 · Velocidad de la partícula ${i + 1}`, `r₁ = ${fm(r1)}, r₂ = ${fm(r2)}`) +
+        `<p><span style="color:${C.vio}">inercia</span> w·v = ${pv(vi)}<br><span style="color:${C.cyan}">cognitiva</span> c₁r₁(p − x) = ${pv(vc)}<br><span style="color:${C.coral}">social</span> c₂r₂(g − x) = ${pv(vs)}<br><span style="color:${C.gold}">v nueva</span> = <b>${pv(nv)}</b>${Math.abs(nv[0]) === vmax || Math.abs(nv[1]) === vmax ? ' (limitada a v<sub>máx</sub>)' : ''}</p>` };
+      const upd = j => {
+        if (j !== i) { V[j] = clampV(add(add(mul(V[j], P.w), mul(sub(Pb[j], X[j]), P.c1 * R.u())), mul(sub(g, X[j]), P.c2 * R.u()))); }
+        else V[j] = nv;
+        X[j] = clampP(F, add(X[j], V[j])); fx[j] = ev(...X[j]);
+        if (fx[j] < fp[j]) { fp[j] = fx[j]; Pb[j] = X[j].slice(); }
+        if (fx[j] < fg) { fg = fx[j]; g = X[j].slice(); }
+      };
+      const old = x.slice(); upd(i); setBest(S, g, fg); sw(i);
+      S.segs.push({ a: old, b: X[i], c: C.gold, w: 2, head: true });
+      yield { info: op('2 · Mover y actualizar memorias', `x = ${pv(old)} + ${pv(nv)} = <b>${pv(X[i])}</b>, f = ${fm(fx[i])}`) + `<p>p${sb(i + 1)}: f = ${fm(fp[i])} · g: f = ${fm(fg)}</p>` };
+      for (let j = 0; j < N; j++) if (j !== i) upd(j);
+      setBest(S, g, fg); hist.push(fg); S.iter = it; sw();
+      yield { info: op('3 · Resto del enjambre', 'todas las partículas aplican la misma regla') + `<p>Mejor global g = ${pv(g)}, f = ${fm(fg)}.</p>`, end: true };
+    }
+  }
+};
+
+/* ---------------- 12. Colonia de hormigas ---------------- */
+ALG.aco = {
+  nombre: 'Colonia de hormigas (ACO)', kind: 'tsp',
+  params: () => [{ k: 'n', l: 'Ciudades', min: 5, max: 16, step: 1, v: 9 }, { k: 'm', l: 'Hormigas', min: 2, max: 20, step: 1, v: 8 }, { k: 'alpha', l: 'α (peso de la feromona)', min: 0, max: 3, step: 0.1, v: 1 }, { k: 'beta', l: 'β (peso de la distancia)', min: 0, max: 5, step: 0.1, v: 2 }, { k: 'rho', l: 'ρ (evaporación)', min: 0.05, max: 0.9, step: 0.05, v: 0.3 }],
+  *gen(_, P, R, S, ev) {
+    const X = P.cities || cities(P.n, 23 + P.n), n = X.length, D = X.map(a => X.map(b => dist(a, b))), eta = D.map(r => r.map(d => d > 0 ? 1 / d : 0));
+    let tau = D.map(r => r.map(() => 1)); const hist = []; S.iter = 0;
+    const edges = () => { const mx = Math.max(...tau.flat()); const E = []; for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) E.push({ a: X[i], b: X[j], c: C.cyan, w: 0.5 + 7 * tau[i][j] / mx, al: 0.08 + 0.6 * tau[i][j] / mx }); return E; };
+    const cp = () => X.map((p, i) => ({ p, c: i === 0 && P.names ? C.gold : C.w, r: i === 0 && P.names ? 7 : 5, label: P.names ? P.names[i] : String(i) }));
+    const build = () => { const t = [R.int(n)]; while (t.length < n) { const i = t[t.length - 1], al = [...Array(n).keys()].filter(j => !t.includes(j)); const w = al.map(j => tau[i][j] ** P.alpha * eta[i][j] ** P.beta), s = w.reduce((a, b) => a + b, 0); let r = R.u() * s, k = 0; while (r > w[k] && k < w.length - 1) { r -= w[k]; k++; } t.push(al[k]); } return t; };
+    S.edges = edges(); S.pts = cp();
+    yield { info: op('Inicio', `τ = 1 en todas las aristas, η = 1/d`) + `<p>Regla de transición ${mono('p<sub>ij</sub> = τ<sub>ij</sub><sup>α</sup>η<sub>ij</sub><sup>β</sup> / Σ τ<sup>α</sup>η<sup>β</sup>')}. El grosor de cada arista es su feromona.</p>`, end: true };
+    for (let it = 1; it < 100000; it++) {
+      const t = [R.int(n)];
+      S.edges = edges(); S.paths = []; S.pts = cp();
+      while (t.length < n) {
+        const i = t[t.length - 1], al = [...Array(n).keys()].filter(j => !t.includes(j));
+        const w = al.map(j => tau[i][j] ** P.alpha * eta[i][j] ** P.beta), s = w.reduce((a, b) => a + b, 0), pr = w.map(v => v / s);
+        const r = R.u(); let acc = 0, k = 0; for (; k < pr.length - 1; k++) { acc += pr[k]; if (r <= acc) break; }
+        const j = al[k];
+        S.paths = [{ p: t.map(c => X[c]), c: C.gold, w: 3 }]; S.segs = al.map((c, q) => ({ a: X[i], b: X[c], c: q === k ? C.gold : C.mute, w: 1 + 6 * pr[q], dash: q !== k, al: 0.9 }));
+        S.pts = [...cp(), { p: X[i], c: C.gold, r: 7, ring: C.gold }];
+        const rows = al.map((c, q) => `<tr${q === k ? ' class="hl"' : ''}><td>${i}→${c}</td><td>${fm(tau[i][c])}</td><td>${fm(D[i][c])}</td><td>${fm(w[q])}</td><td>${fm(pr[q])}</td></tr>`).join('');
+        yield { info: op(`1 · Hormiga 1 en la ciudad ${i}`, `r = ${fm(r)} → elige la ciudad <b>${j}</b>`) + `<table class="mini"><tr><th>arista</th><th>τ</th><th>d</th><th>τ<sup>α</sup>η<sup>β</sup></th><th>p</th></tr>${rows}</table>` };
+        t.push(j);
+      }
+      const tours = [t, ...Array.from({ length: P.m - 1 }, build)], Ls = tours.map(tt => ev(tourLen(tt, D)));
+      S.segs = []; S.paths = tours.map((tt, q) => ({ p: tt.map(c => X[c]), c: q ? C.w : C.gold, w: q ? 1 : 2.6, closed: true, al: q ? 0.25 : 1 }));
+      yield { info: op('2 · Las demás hormigas', `${P.m} rutas construidas`) + `<p>Longitudes: ${Ls.map(L => fm(L)).join(', ')}.</p>` };
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) tau[i][j] *= (1 - P.rho);
+      tours.forEach((tt, q) => tt.forEach((c, k) => { const d2 = tt[(k + 1) % n]; tau[c][d2] += 1 / Ls[q]; tau[d2][c] += 1 / Ls[q]; }));
+      Ls.forEach((L, q) => { if (!S.best || L < S.best.f) S.best = { p: tours[q].slice(), f: L }; });
+      hist.push(S.best.f); S.spark = { data: hist, label: 'mejor ruta', log: false }; S.iter = it;
+      S.edges = edges(); S.paths = [{ p: S.best.p.map(c => X[c]), c: C.gold, w: 2.6, closed: true }];
+      yield { info: op('3 · Evaporación y depósito', `τ ← (1 − ρ)τ + Σ Q/L<sub>k</sub>, ρ = ${P.rho}, Q = 1`) + `<p>Las aristas de rutas cortas reciben más feromona. Mejor ruta: <b>${fm(S.best.f, 4)}</b> ${cells(S.best.p)}</p>`, end: true };
+    }
+  }
+};
+
+/* ---------------- 13. Colonia artificial de abejas ---------------- */
+ALG.abc = {
+  nombre: 'Colonia artificial de abejas (ABC)', kind: '2d', funcs: ['rastrigin', 'ackley', 'himmelblau', 'rosenbrock', 'griewank', 'schwefel'],
+  params: () => [{ k: 'SN', l: 'Fuentes de alimento', min: 3, max: 20, step: 1, v: 8 }, { k: 'limit', l: 'Límite de intentos', min: 2, max: 40, step: 1, v: 10 }],
+  *gen(F, P, R, S, ev) {
+    const SN = P.SN; let X = Array.from({ length: SN }, () => randIn(F, R)), fx = X.map(p => ev(...p)), tr = Array(SN).fill(0); const hist = [];
+    const fit = f => f >= 0 ? 1 / (1 + f) : 1 + Math.abs(f);
+    S.iter = 0; S.iterLabel = 'Ciclo';
+    const show = () => { S.pts = [...X.map((p, i) => ({ p, c: HUES[i % 16], r: 5, label: 't=' + tr[i] })), ...(S.best ? [{ p: S.best.p, c: C.gold, star: true, r: 6 }] : [])]; };
+    const nb = i => { let k; do k = R.int(SN); while (k === i); const j = R.int(2), phi = R.u(-1, 1), v = X[i].slice(); v[j] = X[i][j] + phi * (X[i][j] - X[k][j]); return { v: clampP(F, v), k, j, phi }; };
+    const tryi = i => { const o = nb(i), fv = ev(...o.v), ok = fv < fx[i]; const old = X[i]; if (ok) { X[i] = o.v; fx[i] = fv; tr[i] = 0; } else tr[i]++; return { ...o, fv, ok, old }; };
+    const upd = () => { fx.forEach((f, i) => setBest(S, X[i], f)); hist.push(S.best.f); S.spark = { data: hist }; };
+    upd(); show();
+    yield { info: op('Inicio', `${SN} fuentes de alimento (soluciones); t = intentos sin mejora`) + `<p>Vecino: ${mono('v<sub>ij</sub> = x<sub>ij</sub> + φ(x<sub>ij</sub> − x<sub>kj</sub>)')}, φ ∼ U(−1, 1), en una sola coordenada j.</p>`, end: true };
+    for (let cyc = 1; cyc < 100000; cyc++) {
+      const res = X.map((_, i) => tryi(i)); show();
+      S.segs = res.map(r => ({ a: r.old, b: r.v, c: r.ok ? C.lime : C.coral, w: 1.6, head: true, dash: !r.ok }));
+      const r0 = res[0];
+      yield { info: op('1 · Abejas empleadas', 'cada fuente prueba un vecino y se queda con el mejor (voraz)') +
+        `<p>Fuente 1: k = ${r0.k + 1}, j = ${r0.j === 0 ? 'x' : 'y'}, φ = ${fm(r0.phi)} → v = ${pv(r0.v)}, f(v) = ${fm(r0.fv)} ${r0.ok ? '<span class="ok">mejora</span>' : '<span class="warn">no mejora (t + 1)</span>'}.</p><p>Verde: aceptado · rojo: rechazado. ${res.filter(r => r.ok).length} de ${SN} mejoraron.</p>` };
+      const ft = fx.map(fit), s = ft.reduce((a, b) => a + b, 0), pr = ft.map(v => v / s), picks = [];
+      for (let q = 0; q < SN; q++) { let r = R.u(), i = 0, acc = pr[0]; while (r > acc && i < SN - 1) { i++; acc += pr[i]; } picks.push(i); }
+      S.pie = { vals: ft, cols: HUES.slice(0, SN), title: 'probabilidad' };
+      const res2 = picks.map(i => tryi(i)); show(); S.segs = res2.map(r => ({ a: r.old, b: r.v, c: r.ok ? C.lime : C.coral, w: 1.6, head: true, dash: !r.ok }));
+      const cnt = picks.reduce((m, i) => (m[i] = (m[i] || 0) + 1, m), {});
+      yield { info: op('2 · Abejas observadoras', 'eligen fuentes con probabilidad proporcional a la aptitud (ruleta)') +
+        `<p>aptitud = 1/(1 + f). Probabilidades: ${pr.map((p, i) => `<span style="color:${HUES[i]}">${fm(p, 2)}</span>`).join(' · ')}</p><p>Visitas: ${Object.entries(cnt).map(([i, c]) => `fuente ${+i + 1} ×${c}`).join(', ')}. Las buenas fuentes se explotan más.</p>` };
+      S.pie = null;
+      const mi = tr.indexOf(Math.max(...tr)); let msg = `Ninguna fuente supera el límite (${P.limit}).`; S.segs = [];
+      if (tr[mi] > P.limit) { const old = X[mi]; X[mi] = randIn(F, R); fx[mi] = ev(...X[mi]); tr[mi] = 0; S.segs = [{ a: old, b: X[mi], c: C.mag, w: 2, head: true, dash: true }]; msg = `La fuente ${mi + 1} superó el límite: su abeja se vuelve <b>exploradora</b> y busca una fuente nueva al azar (flecha rosa).`; }
+      upd(); S.iter = cyc; show();
+      yield { info: op('3 · Abejas exploradoras', 'abandonan fuentes agotadas') + `<p>${msg}</p><p>Mejor f = ${fm(S.best.f)} en ${pv(S.best.p)}.</p>`, end: true };
+    }
+  }
+};
+
+/* ---------------- 14. Evolución diferencial ---------------- */
+ALG.de = {
+  nombre: 'Evolución diferencial (DE)', kind: '2d', funcs: ['rastrigin', 'ackley', 'himmelblau', 'rosenbrock', 'schwefel', 'griewank'],
+  params: () => [{ k: 'N', l: 'Población N', min: 4, max: 40, step: 1, v: 12 }, { k: 'Fs', l: 'Factor F', min: 0.1, max: 1.5, step: 0.05, v: 0.8 }, { k: 'CR', l: 'Cruza CR', min: 0, max: 1, step: 0.05, v: 0.9 }],
+  *gen(F, P, R, S, ev) {
+    let X = Array.from({ length: P.N }, () => randIn(F, R)), fx = X.map(p => ev(...p)); const hist = [];
+    S.iter = 0; S.iterLabel = 'Generación';
+    const show = (hi = {}) => { S.pts = [...X.map((p, i) => ({ p, c: hi[i] ? hi[i][0] : C.w, r: hi[i] ? 6 : 4, label: hi[i] ? hi[i][1] : '', lc: hi[i] ? hi[i][0] : C.w })), ...(S.best ? [{ p: S.best.p, c: C.gold, star: true, r: 5 }] : [])]; };
+    const upd = () => { fx.forEach((f, i) => setBest(S, X[i], f)); hist.push(S.best.f); S.spark = { data: hist }; };
+    const trial = i => { const [a, b, c] = R.distinct(P.N, 3, [i]); const v = clampP(F, add(X[a], mul(sub(X[b], X[c]), P.Fs))); const jr = R.int(2), rj = [R.u(), R.u()]; const u = [0, 1].map(j => (rj[j] < P.CR || j === jr) ? v[j] : X[i][j]); return { a, b, c, v, u, jr, rj }; };
+    upd(); show();
+    yield { info: op('Población inicial', `N = ${P.N}`) + `<p>DE/rand/1/bin: ${mono('v = x<sub>r1</sub> + F(x<sub>r2</sub> − x<sub>r3</sub>)')}, cruza binomial con CR y selección voraz.</p>`, end: true };
+    for (let gen = 1; gen < 100000; gen++) {
+      const i = (gen - 1) % P.N, t = trial(i);
+      show({ [i]: [C.gold, 'xᵢ'], [t.a]: [C.cyan, 'r1'], [t.b]: [C.lime, 'r2'], [t.c]: [C.coral, 'r3'] }); S.segs = [];
+      yield { info: op('1 · Elegir vectores', `objetivo x${sb('i')} = individuo ${i + 1}; r1, r2, r3 distintos de i`) + `<p>r1 = ${t.a + 1} ${pv(X[t.a])}, r2 = ${t.b + 1} ${pv(X[t.b])}, r3 = ${t.c + 1} ${pv(X[t.c])}</p>` };
+      const diff = sub(X[t.b], X[t.c]);
+      S.segs = [{ a: X[t.c], b: X[t.b], c: C.lime, w: 1.6, head: true, dash: true, label: 'x₂ − x₃' }, { a: X[t.a], b: t.v, c: C.mag, w: 2.6, head: true, label: 'F·(x₂ − x₃)' }];
+      S.pts.push({ p: t.v, c: C.mag, r: 6, label: 'v', lc: C.mag });
+      yield { info: op('2 · Mutación diferencial', `v = x${sb('r1')} + ${P.Fs}·${pv(diff)} = <b>${pv(t.v)}</b>`) + '<p>La diferencia entre dos individuos da el tamaño y la dirección del paso: se adapta sola a la dispersión de la población.</p>' };
+      S.segs = [{ a: X[i], b: t.u, c: C.vio, w: 2, head: true }]; S.pts.push({ p: t.u, c: C.vio, r: 6, label: 'u', lc: C.vio });
+      yield { info: op('3 · Cruza binomial', `CR = ${P.CR}, j<sub>rand</sub> = ${t.jr === 0 ? 'x' : 'y'}`) +
+        `<p>${['x', 'y'].map((n, j) => `${n}: r = ${fm(t.rj[j], 2)} ${t.rj[j] < P.CR || j === t.jr ? `→ de v (${fm(t.v[j])})` : `→ de xᵢ (${fm(X[i][j])})`}`).join('<br>')}</p><p>u = <b>${pv(t.u)}</b></p>` };
+      const fu = ev(...t.u), ok = fu <= fx[i];
+      yield { info: op('4 · Selección voraz', `f(u) = ${fm(fu)} vs f(xᵢ) = ${fm(fx[i])}`) + `<p>${ok ? '<span class="ok">u reemplaza a xᵢ.</span>' : '<span class="warn">Se conserva xᵢ.</span>'}</p>` };
+      const NX = X.map(p => p.slice()), NF = fx.slice(); if (ok) { NX[i] = t.u; NF[i] = fu; }
+      for (let j = 0; j < P.N; j++) if (j !== i) { const q = trial(j), fq = ev(...q.u); if (fq <= fx[j]) { NX[j] = q.u; NF[j] = fq; } }
+      X = NX; fx = NF; upd(); S.iter = gen; S.segs = []; show();
+      yield { info: op('5 · Resto de la población', 'cada individuo compite contra su propio vector de prueba') + `<p>Mejor f = ${fm(S.best.f)} en ${pv(S.best.p)}.</p>`, end: true };
+    }
+  }
+};
+
+/* ---------------- 15. Luciérnagas ---------------- */
+ALG.luciernagas = {
+  nombre: 'Algoritmo de luciérnagas', kind: '2d', funcs: ['rastrigin', 'himmelblau', 'ackley', 'griewank', 'easom'],
+  params: F => [{ k: 'N', l: 'Luciérnagas', min: 4, max: 30, step: 1, v: 12 }, { k: 'gamma', l: 'γ (absorción de la luz)', min: 0, max: 40 / rng2(F) ** 2, step: 0.4 / rng2(F) ** 2, v: 6 / rng2(F) ** 2 },
+  { k: 'alpha', l: 'α (aleatoriedad)', min: 0, max: rng2(F) / 10, step: rng2(F) / 1000, v: rng2(F) / 50 }],
+  *gen(F, P, R, S, ev) {
+    let X = Array.from({ length: P.N }, () => randIn(F, R)), fx = X.map(p => ev(...p)), al = P.alpha; const hist = [], b0 = 1;
+    S.iter = 0; S.iterLabel = 'Generación';
+    const show = (hi = -1) => { const order = fx.map((f, i) => i).sort((a, b) => fx[a] - fx[b]); S.pts = X.map((p, i) => ({ p, c: i === hi ? C.mag : C.gold, r: i === hi ? 6 : 4, glow: 8 + 22 * (1 - order.indexOf(i) / P.N) })); };
+    const upd = () => { fx.forEach((f, i) => setBest(S, X[i], f)); hist.push(S.best.f); S.spark = { data: hist }; };
+    const move = i => { const steps = []; for (let j = 0; j < P.N; j++) if (fx[j] < fx[i]) { const r2 = (X[i][0] - X[j][0]) ** 2 + (X[i][1] - X[j][1]) ** 2, be = b0 * Math.exp(-P.gamma * r2), eps = [R.n(), R.n()], old = X[i]; X[i] = clampP(F, add(add(old, mul(sub(X[j], old), be)), mul(eps, al))); fx[i] = ev(...X[i]); steps.push({ j, r2, be, old, nw: X[i] }); } return steps; };
+    upd(); show();
+    yield { info: op('Inicio', `${P.N} luciérnagas; el brillo es mayor mientras menor es f`) + `<p>${mono('β(r) = β₀e<sup>−γr²</sup>')}, ${mono('xᵢ ← xᵢ + β(xⱼ − xᵢ) + α·ε')}. El halo indica el brillo.</p>`, end: true };
+    for (let gen = 1; gen < 100000; gen++) {
+      const order = fx.map((f, k) => k).sort((a, b) => fx[b] - fx[a]), i = order[(gen - 1) % Math.max(1, P.N - 1)];
+      const steps = move(i); show(i);
+      S.segs = steps.map(s => ({ a: s.old, b: s.nw, c: C.mag, w: 1.8, head: true }));
+      const s0 = steps[0];
+      yield { info: op(`1 · Luciérnaga ${i + 1}`, steps.length ? `se mueve hacia ${steps.length} luciérnaga(s) más brillante(s)` : 'es la más brillante: no se mueve hacia nadie') +
+        (s0 ? `<p>Primera atracción (hacia ${s0.j + 1}): r² = ${fm(s0.r2)}, β = e<sup>−${fm(P.gamma, 4)}·${fm(s0.r2)}</sup> = <b>${fm(s0.be)}</b><br>${pv(s0.old)} → ${pv(s0.nw)}</p><p>${P.gamma * s0.r2 > 4 ? 'γr² grande: la atracción es casi nula, la luz no llega tan lejos.' : 'Está cerca: la atracción es fuerte.'}</p>` : '') };
+      for (const k of order) if (k !== i) move(k);
+      al *= 0.97; upd(); S.iter = gen; S.segs = []; show();
+      yield { info: op('2 · Resto de las luciérnagas', `α se reduce: α = ${fm(al)}`) + `<p>Mejor f = ${fm(S.best.f)} en ${pv(S.best.p)}. Con γ grande se forman varios grupos, cada uno alrededor de un óptimo local.</p>`, end: true };
+    }
+  }
+};
+
+const ALG_ORDER = ['gradiente', 'newton', 'bfgs', 'aleatoria', 'colina', 'nelder', 'recocido', 'agbin', 'agreal', 'agperm', 'pso', 'aco', 'abc', 'de', 'luciernagas'];
+const defaultsOf = (def, F) => Object.fromEntries((def.params(F) || []).map(p => [p.k, p.v]));
+
+</script>
+<script>
+const $ = s => document.querySelector(s);
+const ctx2 = cv => { const r = cv.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2); cv.width = Math.max(200, Math.round(r.width * d)); cv.height = Math.max(120, Math.round(r.height * d)); const g = cv.getContext('2d'); return { g, W: cv.width, H: cv.height, d }; };
+const redraws = []; let rzT; window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => redraws.forEach(f => f()), 150); });
+function looper(fn, btn, getMs) { let t = null; const lab = btn.textContent; const stop = () => { clearTimeout(t); t = null; btn.textContent = lab; };
+  const tick = () => { if (fn() === false) { stop(); return; } t = setTimeout(tick, getMs()); };
+  return { toggle() { if (t) stop(); else { btn.textContent = '❚❚ PAUSA'; tick(); } }, stop, get on() { return !!t; } }; }
+
+/* ================= NIVEL 1: galería ================= */
+(() => {
+  const keys = Object.keys(FUNCS); let cur = 'rastrigin';
+  const cards = $('#fcards'), plot = new Plot($('#fcv')), sp = new Plot($('#scv')), sy = $('#sy');
+  keys.forEach(k => {
+    const b = document.createElement('button'); b.setAttribute('aria-pressed', k === cur); b.innerHTML = `<canvas width="120" height="120"></canvas>${FUNCS[k].nombre}`;
+    b.querySelector('canvas').getContext('2d').drawImage(fieldCanvas(FUNCS[k], 120, 120), 0, 0);
+    b.onclick = () => { cur = k; cards.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); setY(); render(); };
+    cards.appendChild(b);
+  });
+  const setY = () => { const F = FUNCS[cur]; sy.min = F.dom[2]; sy.max = F.dom[3]; sy.step = (F.dom[3] - F.dom[2]) / 400; sy.value = F.opt[0][1]; };
+  let hover = null;
+  const render = () => {
+    const F = FUNCS[cur], y = +sy.value; plot.set2D(F);
+    const S = { labels: F.opt.map(o => ({ p: o, t: `${F.opt.length > 1 ? '' : 'x* = '}${pv(o, 3)}`, c: C.lime })), segs: [{ a: [F.dom[0], y], b: [F.dom[1], y], c: C.mag, w: 1.5, dash: true }] };
+    if (hover) S.pts = [{ p: hover, c: C.w, r: 4, hollow: true }];
+    plot.draw(S);
+    const fy = (F.dom[1] - F.dom[0]) / 100, xopt = F.opt.filter(o => Math.abs(o[1] - y) < 2 * fy).map(o => o[0])[0];
+    sp.set1D({ f: x => F.f(x, y), a: F.dom[0], b: F.dom[1], opt: xopt }); sp.draw({});
+    $('#syv').textContent = fm(y, 3); $('#fname').textContent = F.nombre.toUpperCase();
+    $('#ffacts').innerHTML = `<dt>Fórmula</dt><dd>${F.formula}</dd><dt>Dominio</dt><dd>[${fm(F.dom[0])}, ${fm(F.dom[1])}] × [${fm(F.dom[2])}, ${fm(F.dom[3])}]</dd><dt>Óptimo${F.opt.length > 1 ? 's' : ''}</dt><dd>${F.opt.map(o => pv(o, 4)).join('<br>')}</dd><dt>f*</dt><dd>${fm(F.fopt, 4)}</dd><dt>Tipo</dt><dd>${F.tipo}</dd><dt>Nota</dt><dd style="font-family:var(--body)">${F.nota}</dd>`;
+  };
+  plot.cv.addEventListener('mousemove', e => { const r = plot.cv.getBoundingClientRect(), p = plot.inv(e.clientX - r.left, e.clientY - r.top), F = FUNCS[cur]; hover = p; $('#fread').innerHTML = `<span>(x, y) = <b>${pv(p, 3)}</b></span><span>f(x, y) = <b>${fm(F.f(...p), 4)}</b></span><span>distancia al óptimo más cercano <b>${fm(Math.min(...F.opt.map(o => dist(o, p))), 3)}</b></span>`; render(); });
+  plot.cv.addEventListener('mouseleave', () => { hover = null; render(); });
+  sy.oninput = render; setY(); render(); redraws.push(render);
+})();
+
+/* ================= NIVEL 2: laboratorio ================= */
+(() => {
+  const L2 = ['pso', 'de', 'agreal', 'abc', 'luciernagas', 'recocido', 'colina', 'nelder', 'aleatoria', 'gradiente', 'bfgs'];
+  const lf = $('#lf'), la = $('#la'), plot = new Plot($('#lcv')), run = new Runner({ plot, info: $('#linfo'), stats: $('#lst') });
+  Object.keys(FUNCS).forEach(k => lf.add(new Option(FUNCS[k].nombre, k))); lf.value = 'rastrigin';
+  L2.forEach(k => la.add(new Option(ALG[k].nombre, k)));
+  let start = null, seed = 1;
+  const load = () => { const F = FUNCS[lf.value], def = ALG[la.value], P = defaultsOf(def, F); if (start && def.click) P.start = start; run.load(def, F, P, seed); };
+  lf.onchange = () => { start = null; load(); }; la.onchange = () => { seed++; load(); };
+  $('#lplay').onclick = () => run.play(); run.onState = on => $('#lplay').textContent = on ? '❚❚ PAUSA' : '▶ JUGAR';
+  $('#lstep').onclick = () => { run.stopPlay(); run.step(); }; $('#liter').onclick = () => { run.stopPlay(); run.iterate(); };
+  $('#lreset').onclick = () => { seed++; load(); };
+  $('#lsp').oninput = e => { run.speed = +e.target.value; $('#lspv').textContent = e.target.value; }; run.speed = 8;
+  plot.cv.addEventListener('click', e => { const r = plot.cv.getBoundingClientRect(); start = clampP(FUNCS[lf.value], plot.inv(e.clientX - r.left, e.clientY - r.top)); load(); });
+  load(); redraws.push(() => run.render());
+})();
+
+/* ================= NIVEL 3: mochila con AG binario ================= */
+(() => {
+  const crops = [['Maíz', 18, 8, '#ffe14d'], ['Frijol', 12, 4, '#ff9b42'], ['Caña', 30, 15, '#7dff6a'], ['Chile', 26, 10, '#ff4fb8'], ['Naranja', 14, 3, '#3ff0ff'], ['Café', 20, 5, '#c9a7ff']];
+  const n = crops.length, N = 12, pm = 1 / n, pc = 0.8; let W = 30, R, pop, gen, hist, best;
+  const gan = b => b.reduce((a, v, i) => a + v * crops[i][1], 0), agua = b => b.reduce((a, v, i) => a + v * crops[i][2], 0);
+  const apt = b => gan(b) - 10 * Math.max(0, agua(b) - W);
+  const brute = () => { let o = null; for (let m = 0; m < 1 << n; m++) { const b = [...Array(n)].map((_, i) => (m >> (n - 1 - i)) & 1); if (agua(b) <= W && (!o || gan(b) > gan(o))) o = b; } return o; };
+  $('#mtab').innerHTML = '<tr><th>Cultivo</th><th>Ganancia</th><th>Agua</th><th>Gan./agua</th></tr>' + crops.map(c => `<tr><td><span class="sw" style="background:${c[3]}"></span>${c[0]}</td><td>${c[1]}</td><td>${c[2]}</td><td>${fm(c[1] / c[2], 2)}</td></tr>`).join('');
+  const reset = () => { R = new Rng(Math.floor(Math.random() * 1e6)); pop = Array.from({ length: N }, () => crops.map(() => R.int(2))); gen = 0; hist = []; best = null; track(); draw(); };
+  const track = () => { pop.forEach(b => { if (agua(b) <= W && (!best || gan(b) > gan(best))) best = b.slice(); }); hist.push(Math.max(...pop.map(apt))); };
+  const step = () => {
+    const F = pop.map(apt), mn = Math.min(...F), Fp = F.map(f => f - mn + 1), tot = Fp.reduce((a, b) => a + b, 0);
+    const pick = () => { let r = R.u() * tot, i = 0; while (r > Fp[i] && i < N - 1) { r -= Fp[i]; i++; } return pop[i]; };
+    const kids = [];
+    while (kids.length < N) { const a = pick(), b = pick(); if (R.u() < pc) { const c = 1 + R.int(n - 1); kids.push([...a.slice(0, c), ...b.slice(c)], [...b.slice(0, c), ...a.slice(c)]); } else kids.push(a.slice(), b.slice()); }
+    kids.forEach(k => k.forEach((v, j) => { if (R.u() < pm) k[j] = 1 - v; }));
+    const ei = F.indexOf(Math.max(...F)), kf = kids.map(apt); kids[kf.indexOf(Math.min(...kf))] = pop[ei].slice();
+    pop = kids; gen++; track(); draw();
+  };
+  const draw = () => {
+    const { g, W: w, H, d } = ctx2($('#mcv')); g.fillStyle = '#0b1026'; g.fillRect(0, 0, w, H);
+    const left = 12 * d, top = 34 * d, rowH = (H - top - 70 * d) / N, cw = Math.min(64 * d, (w * 0.5) / n);
+    g.font = `600 ${11 * d}px "IBM Plex Mono", monospace`; g.fillStyle = '#a99cd6';
+    crops.forEach((c, j) => { g.fillStyle = c[3]; g.fillText(c[0].slice(0, 4), left + j * cw + 4 * d, top - 10 * d); });
+    g.fillStyle = '#a99cd6'; g.fillText('aptitud', left + n * cw + 16 * d, top - 10 * d);
+    const F = pop.map(apt), mx = Math.max(...crops.map(c => c[1])) * 4;
+    pop.forEach((b, i) => {
+      const y = top + i * rowH;
+      b.forEach((v, j) => { g.fillStyle = v ? crops[j][3] : '#1a1033'; g.fillRect(left + j * cw + 2 * d, y + 2 * d, cw - 4 * d, rowH - 4 * d); g.fillStyle = v ? '#0b1026' : '#3a2a66'; g.fillText(v, left + j * cw + cw / 2 - 3 * d, y + rowH / 2 + 4 * d); });
+      const bx = left + n * cw + 16 * d, bw = w - bx - 120 * d, f = F[i], over = agua(b) > W;
+      g.fillStyle = over ? '#ff4fb8' : '#7dff6a'; g.fillRect(bx, y + rowH * 0.25, Math.max(0, bw * Math.max(0, f) / mx), rowH * 0.5);
+      g.fillStyle = '#f4efff'; g.fillText(`${f} (agua ${agua(b)})`, bx + Math.max(0, bw * Math.max(0, f) / mx) + 6 * d, y + rowH / 2 + 4 * d);
+    });
+    const yb = H - 50 * d, used = best ? agua(best) : 0, sc = (w - 2 * left) / Math.max(W, 60);
+    g.fillStyle = '#a99cd6'; g.fillText('agua de la mejor solución factible', left, yb - 6 * d);
+    g.fillStyle = '#1a1033'; g.fillRect(left, yb, (w - 2 * left), 22 * d);
+    let x = left; if (best) best.forEach((v, j) => { if (v) { g.fillStyle = crops[j][3]; g.fillRect(x, yb, crops[j][2] * sc - 1, 22 * d); x += crops[j][2] * sc; } });
+    g.strokeStyle = '#ffe14d'; g.lineWidth = 2 * d; g.beginPath(); g.moveTo(left + W * sc, yb - 6 * d); g.lineTo(left + W * sc, yb + 28 * d); g.stroke();
+    g.fillStyle = '#ffe14d'; g.fillText(`límite ${W}`, Math.min(w - 80 * d, left + W * sc + 4 * d), yb + 40 * d);
+    const opt = brute();
+    $('#mst').innerHTML = `<span>Generación <b>${gen}</b></span><span>Mejor factible <b>${best ? gan(best) : '—'}</b> (${best ? crops.filter((_, i) => best[i]).map(c => c[0]).join(', ') || 'nada' : '—'})</span><span>Óptimo por fuerza bruta <b>${gan(opt)}</b></span>${best && gan(best) === gan(opt) ? '<span class="fin">¡óptimo encontrado!</span>' : ''}`;
+  };
+  const lp = looper(() => { step(); if (gen > 300) return false; }, $('#mplay'), () => 180);
+  $('#mplay').onclick = () => lp.toggle(); $('#mstep').onclick = () => { lp.stop(); step(); }; $('#mreset').onclick = () => { lp.stop(); reset(); };
+  $('#mw').oninput = e => { W = +e.target.value; $('#mwv').textContent = W; best = null; pop.forEach(b => { if (agua(b) <= W && (!best || gan(b) > gan(best))) best = b.slice(); }); draw(); };
+  reset(); redraws.push(draw);
+})();
+
+/* ================= NIVEL 4: rutas ================= */
+(() => {
+  const plot = new Plot($('#rcv')); let run, X, names, seed = 5;
+  const mk = () => { const m = +$('#rn').value; X = [[0.5, 0.5], ...cities(m, seed).map(p => [p[0], p[1]])]; for (let i = 1; i < X.length; i++) if (dist(X[i], X[0]) < 0.08) X[i] = [X[i][0] * 0.9 + 0.05, X[i][1] * 0.9 + 0.05]; names = ['Ingenio', ...X.slice(1).map((_, i) => 'P' + (i + 1))]; };
+  const KM = 30, nn = () => { const D = X.map(a => X.map(b => dist(a, b))); let t = [0], L = 0; while (t.length < X.length) { const i = t[t.length - 1]; let bj = -1; X.forEach((_, j) => { if (!t.includes(j) && (bj < 0 || D[i][j] < D[i][bj])) bj = j; }); L += D[i][bj]; t.push(bj); } return L + D[t[t.length - 1]][0]; };
+  const stats = () => { const b = run.S.best; $('#rst').innerHTML = `<span>Iteración <b>${run.S.iter ?? 0}</b></span><span>Mejor ruta <b>${b ? fm(b.f * KM, 3) : '—'} km</b></span><span>Vecino más cercano <b>${fm(nn() * KM, 3)} km</b></span>${b ? `<span>Ahorro <b>${fm((1 - b.f / nn()) * 100, 3)} %</b></span>` : ''}`; };
+  const load = () => { mk(); const k = $('#ralg').value, def = ALG[k]; run = new Runner({ plot, info: $('#rinfo') }); run.onState = on => $('#rplay').textContent = on ? '❚❚ PAUSA' : '▶ JUGAR';
+    const P = { ...defaultsOf(def), cities: X, names }; if (k === 'aco') P.m = 10; run.load(def, null, P, seed); const r0 = run.render.bind(run); run.render = () => { r0(); stats(); }; run.render(); run.speed = 6; };
+  $('#rplay').onclick = () => run.play(); $('#rstep').onclick = () => { run.stopPlay(); run.step(); };
+  $('#rreset').onclick = () => { run.stopPlay(); seed++; load(); }; $('#ralg').onchange = () => { run.stopPlay(); load(); };
+  $('#rn').oninput = e => $('#rnv').textContent = e.target.value; $('#rn').onchange = () => { run.stopPlay(); load(); };
+  load(); redraws.push(() => run.render());
+})();
+
+/* ===== optimizadores en n dimensiones (niveles 5 y 6) ===== */
+function makeOpt(kind, f, lo, hi, R, N = 20) {
+  const n = lo.length, rnd = () => lo.map((l, j) => R.u(l, hi[j])), clip = x => x.map((v, j) => Math.min(hi[j], Math.max(lo[j], v)));
+  let X = Array.from({ length: N }, rnd), fx = X.map(f), evals = N, V = X.map(() => lo.map((l, j) => R.u(-1, 1) * (hi[j] - l) * 0.1)), Pb = X.map(x => x.slice()), fp = fx.slice();
+  let bi = fx.indexOf(Math.min(...fx)), best = X[bi].slice(), fb = fx[bi];
+  const step = () => {
+    if (kind === 'de') {
+      const NX = [], NF = [];
+      for (let i = 0; i < N; i++) { const [a, b, c] = R.distinct(N, 3, [i]), jr = R.int(n); const u = clip(X[i].map((v, j) => (R.u() < 0.9 || j === jr) ? X[a][j] + 0.7 * (X[b][j] - X[c][j]) : v)); const fu = f(u); evals++; if (fu <= fx[i]) { NX.push(u); NF.push(fu); } else { NX.push(X[i]); NF.push(fx[i]); } }
+      X = NX; fx = NF;
+    } else if (kind === 'pso') {
+      for (let i = 0; i < N; i++) { V[i] = V[i].map((v, j) => { const vm = (hi[j] - lo[j]) * 0.2; return Math.max(-vm, Math.min(vm, 0.7 * v + 1.5 * R.u() * (Pb[i][j] - X[i][j]) + 1.5 * R.u() * (best[j] - X[i][j]))); }); X[i] = clip(X[i].map((x, j) => x + V[i][j])); fx[i] = f(X[i]); evals++; if (fx[i] < fp[i]) { fp[i] = fx[i]; Pb[i] = X[i].slice(); } if (fx[i] < fb) { fb = fx[i]; best = X[i].slice(); } }
+    } else { for (let i = 0; i < N; i++) { X[i] = rnd(); fx[i] = f(X[i]); evals++; } }
+    fx.forEach((v, i) => { if (v < fb) { fb = v; best = X[i].slice(); } });
+  };
+  return { step, get X() { return X; }, get best() { return best; }, get fb() { return fb; }, get evals() { return evals; } };
+}
+
+/* ================= NIVEL 5: calibración ================= */
+(() => {
+  const days = Array.from({ length: 19 }, (_, i) => i * 7), TRUE = [250, 0.085, 58];
+  const lo = [100, 0.01, 10], hi = [400, 0.3, 110], model = (p, d) => p[0] / (1 + Math.exp(-p[1] * (d - p[2])));
+  let data, opt, gen, hist, R;
+  const mkData = () => { const Rn = new Rng(41); const s = +$('#cnoise').value; data = days.map(d => [d, Math.max(0, model(TRUE, d) + s * Rn.n())]); };
+  const sse = p => data.reduce((a, [d, h]) => a + (model(p, d) - h) ** 2, 0);
+  const plot = new Plot($('#ccv'));
+  const reset = () => { R = new Rng(Math.floor(Math.random() * 1e6)); mkData(); opt = makeOpt($('#calg').value, sse, lo, hi, R, 24); gen = 0; hist = [opt.fb]; draw(); };
+  const curve = (p, c, w, al) => ({ p: Array.from({ length: 61 }, (_, i) => { const d = 126 * i / 60; return [d, model(p, d)]; }), c, w, al });
+  const draw = () => {
+    plot.setPlain([0, 126, 0, 320], 30);
+    plot.draw({ axes: true, paths: [...opt.X.map(p => curve(p, C.cyan, 1, 0.22)), curve(TRUE, C.lime, 1.5, 0.6), curve(opt.best, C.gold, 3)], pts: data.map(p => ({ p, c: C.w, r: 4 })), spark: { data: hist, label: 'SSE' }, labels: [{ p: [18, 300], t: 'altura (cm) vs días', c: C.mute }] });
+    const b = opt.best;
+    $('#ctab').innerHTML = `<tr><th>Parámetro</th><th>Estimado</th><th>Real (simulación)</th></tr><tr><td>K (altura final, cm)</td><td>${fm(b[0], 2)}</td><td>${TRUE[0]}</td></tr><tr><td>r (tasa, 1/día)</td><td>${fm(b[1], 4)}</td><td>${TRUE[1]}</td></tr><tr><td>d₀ (día del punto medio)</td><td>${fm(b[2], 2)}</td><td>${TRUE[2]}</td></tr>`;
+    $('#cst').innerHTML = `<span>Generación <b>${gen}</b></span><span>Evaluaciones <b>${opt.evals}</b></span><span>SSE <b>${fm(opt.fb, 4)}</b></span><span><i class="sw" style="background:#7dff6a"></i>curva real <i class="sw" style="background:#ffc94d;margin-left:8px"></i>mejor ajuste</span>`;
+  };
+  const step = () => { opt.step(); gen++; hist.push(opt.fb); draw(); };
+  const lp = looper(() => { step(); if (gen >= 200) return false; }, $('#cplay'), () => 90);
+  $('#cplay').onclick = () => lp.toggle(); $('#cstep').onclick = () => { lp.stop(); step(); }; $('#creset').onclick = () => { lp.stop(); reset(); };
+  $('#calg').onchange = () => { lp.stop(); reset(); }; $('#cnoise').oninput = e => $('#cnv').textContent = e.target.value; $('#cnoise').onchange = () => { lp.stop(); reset(); };
+  reset(); redraws.push(draw);
+})();
+
+/* ================= NIVEL 6: sensores ================= */
+(() => {
+  const poly = [[8, 20], [35, 6], [72, 10], [94, 30], [90, 62], [70, 92], [38, 95], [12, 78], [4, 48]];
+  const inside = (p, P = poly) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j]; if ((yi > p[1]) !== (yj > p[1]) && p[0] < (xj - xi) * (p[1] - yi) / (yj - yi) + xi) c = !c; } return c; };
+  const G = []; for (let i = 0; i < 50; i++) for (let j = 0; j < 50; j++) { const p = [1 + i * 2, 1 + j * 2]; if (inside(p)) G.push(p); }
+  let opt, it, R, k, Rad, hist;
+  const cover = v => { const s = []; for (let q = 0; q < k; q++) s.push([v[2 * q], v[2 * q + 1]]); let c = 0; for (const p of G) if (s.some(z => (z[0] - p[0]) ** 2 + (z[1] - p[1]) ** 2 <= Rad * Rad)) c++; return { pct: 100 * c / G.length, s }; };
+  const fit = v => { const { pct, s } = cover(v); return -pct + 5 * s.filter(z => !inside(z)).length; };
+  const plot = new Plot($('#ecv'));
+  const reset = () => { k = +$('#ek').value; Rad = +$('#er').value; R = new Rng(Math.floor(Math.random() * 1e6)); opt = makeOpt('pso', fit, Array(2 * k).fill(0), Array(2 * k).fill(100), R, 24); it = 0; hist = [-opt.fb]; draw(); };
+  const draw = () => {
+    plot.setPlain([0, 100, 0, 100], 14); const { pct, s } = cover(opt.best);
+    const cov = G.filter(p => s.some(z => (z[0] - p[0]) ** 2 + (z[1] - p[1]) ** 2 <= Rad * Rad));
+    plot.draw({ paths: [{ p: poly, c: C.w, w: 2, closed: true, fill: 'rgba(58,42,102,.55)' }],
+      pts: [...cov.map(p => ({ p, c: 'rgba(63,240,255,.55)', r: 2.4 })), ...opt.X.flatMap(v => v.map((_, q) => q % 2 ? null : [v[q], v[q + 1]]).filter(Boolean)).map(p => ({ p, c: 'rgba(255,79,184,.5)', r: 1.8 })), ...s.map((p, q) => ({ p, c: C.gold, r: 6, label: 'S' + (q + 1) }))],
+      circles: s.map(p => ({ p, R: Rad, c: C.gold, dash: false, w: 1.5 })), spark: { data: hist, label: 'cobertura %', log: false } });
+    $('#est').innerHTML = `<span>Iteración <b>${it}</b></span><span>Evaluaciones <b>${opt.evals}</b></span><span>Cobertura <b>${fm(pct, 3)} %</b></span><span>Área por sensor <b>${fm(Math.PI * Rad * Rad, 4)} m²</b></span>`;
+  };
+  const step = () => { opt.step(); it++; hist.push(-opt.fb); draw(); };
+  const lp = looper(() => { step(); if (it >= 250) return false; }, $('#eplay'), () => 90);
+  $('#eplay').onclick = () => lp.toggle(); $('#estep').onclick = () => { lp.stop(); step(); }; $('#ereset').onclick = () => { lp.stop(); reset(); };
+  ['ek', 'er'].forEach(id => { $('#' + id).oninput = e => $('#' + id + 'v').textContent = e.target.value; $('#' + id).onchange = () => { lp.stop(); reset(); }; });
+  reset(); redraws.push(draw);
+})();
+
+/* ================= NIVEL 7: riego con recocido ================= */
+(() => {
+  const dem = [20, 25, 35, 45, 55, 60, 60, 55, 45, 35, 25, 20], sens = [0.4, 0.5, 0.7, 0.9, 1.2, 1.5, 1.5, 1.2, 0.9, 0.6, 0.4, 0.3], n = 12, Ssum = sens.reduce((a, b) => a + b, 0);
+  const etapa = ['emergencia', '', 'vegetativo', '', '', 'floración', '', 'llenado', '', '', 'madurez', ''];
+  const Y = a => 100 * a.reduce((s, v, i) => s + sens[i] * Math.min(1, v / dem[i]) ** 0.6, 0) / Ssum;
+  let W, a, T, it, R, hist, best, fb, last = '';
+  const reset = () => { W = +$('#ww').value; R = new Rng(Math.floor(Math.random() * 1e6)); a = Array(n).fill(W / n); T = 2; it = 0; hist = [Y(a)]; best = a.slice(); fb = Y(a); last = 'Inicio: el agua se reparte igual en las 12 semanas.'; draw(); };
+  const prop = () => { const D = dem.reduce((x, y) => x + y, 0); return dem.map(d => W * d / D); };
+  const one = () => {
+    const i = R.int(n), j = R.int(n); if (i === j || a[i] <= 0) return;
+    const delta = Math.min(a[i], R.u(0, 8)), b = a.slice(); b[i] -= delta; b[j] += delta;
+    const D = Y(b) - Y(a), P = D >= 0 ? 1 : Math.exp(D / T), r = R.u(), acc = r < P;
+    last = `Mover ${fm(delta, 2)} mm de la semana ${i + 1} a la ${j + 1}: ΔY = ${fm(D, 3)} %, T = ${fm(T, 3)}, P = ${fm(P, 3)}, r = ${fm(r, 2)} → ${acc ? (D >= 0 ? '<span class="ok">acepta (mejora)</span>' : '<span class="warn">acepta aunque empeora</span>') : 'rechaza'}`;
+    if (acc) a = b; const y = Y(a); if (y > fb) { fb = y; best = a.slice(); } T *= 0.996; it++;
+  };
+  const draw = () => {
+    const { g, W: w, H, d } = ctx2($('#wcv')); g.fillStyle = '#0b1026'; g.fillRect(0, 0, w, H);
+    const pl = 40 * d, pb = 46 * d, pt = 20 * d, bw = (w - pl - 12 * d) / n, mx = Math.max(80, ...a, ...dem) * 1.1, Yp = v => H - pb - (H - pb - pt) * v / mx;
+    g.font = `${11 * d}px "IBM Plex Mono", monospace`; g.fillStyle = '#a99cd6'; g.strokeStyle = 'rgba(244,239,255,.1)';
+    for (let v = 0; v <= mx; v += 20) { g.beginPath(); g.moveTo(pl, Yp(v)); g.lineTo(w, Yp(v)); g.stroke(); g.fillText(v, 6 * d, Yp(v) + 4 * d); }
+    const pr = prop();
+    for (let i = 0; i < n; i++) {
+      const x = pl + i * bw, sat = Math.min(1, a[i] / dem[i]);
+      g.fillStyle = `rgba(63,240,255,${0.25 + 0.6 * sat})`; g.fillRect(x + 6 * d, Yp(a[i]), bw - 12 * d, Yp(0) - Yp(a[i]));
+      g.strokeStyle = '#ffe14d'; g.lineWidth = 2 * d; g.strokeRect(x + 4 * d, Yp(dem[i]), bw - 8 * d, Yp(0) - Yp(dem[i]));
+      g.fillStyle = '#ff4fb8'; g.fillRect(x + 4 * d, Yp(pr[i]) - 1.5 * d, bw - 8 * d, 3 * d);
+      g.fillStyle = '#f4efff'; g.fillText('S' + (i + 1), x + bw / 2 - 8 * d, H - pb + 16 * d);
+      if (etapa[i]) { g.fillStyle = '#a99cd6'; g.fillText(etapa[i], x + 2 * d, H - pb + 32 * d); }
+      g.fillStyle = `rgba(255,155,66,${sens[i] / 1.5})`; g.fillRect(x + 6 * d, H - pb + 36 * d, bw - 12 * d, 4 * d);
+    }
+    g.fillStyle = '#ffe14d'; g.fillText('marco: demanda', pl + 4 * d, 14 * d); g.fillStyle = '#3ff0ff'; g.fillText('relleno: agua asignada', pl + 130 * d, 14 * d); g.fillStyle = '#ff4fb8'; g.fillText('línea: reparto proporcional', pl + 300 * d, 14 * d);
+    $('#wst').innerHTML = `<span>Iteración <b>${it}</b></span><span>Temperatura <b>${fm(T, 3)}</b></span><span>Rendimiento actual <b>${fm(Y(a), 3)} %</b></span><span>Mejor <b>${fm(fb, 3)} %</b></span><span>Proporcional <b>${fm(Y(prop()), 3)} %</b></span>`;
+    $('#winfo').innerHTML = `<div class="op"><span>Último movimiento</span></div><p>${last}</p><p>Rendimiento relativo: <code>Y = Σ sᵢ · mín(1, aᵢ/dᵢ)<sup>0.6</sup> / Σ sᵢ</code>, con sensibilidad sᵢ mayor en floración (barra naranja bajo cada semana).</p>`;
+  };
+  const lp = looper(() => { for (let q = 0; q < 25; q++) one(); draw(); if (T < 0.005) { a = best.slice(); draw(); return false; } }, $('#wplay'), () => 60);
+  $('#wplay').onclick = () => lp.toggle(); $('#wstep').onclick = () => { lp.stop(); for (let q = 0; q < 50; q++) one(); draw(); }; $('#wreset').onclick = () => { lp.stop(); reset(); };
+  $('#ww').oninput = e => $('#wwv').textContent = e.target.value; $('#ww').onchange = () => { lp.stop(); reset(); };
+  reset(); redraws.push(draw);
+})();
+</script>
